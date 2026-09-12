@@ -1,11 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { QRCodeSVG } from 'qrcode.react';
 
 export default function InsurerApp() {
   const [tab, setTab] = useState('DASHBOARD');
   const [products, setProducts] = useState<any[]>([]);
   const [audits, setAudits] = useState<any[]>([]);
+  const [showQR, setShowQR] = useState<string | null>(null);
 
   // Create product form state
   const [newProduct, setNewProduct] = useState({
@@ -27,7 +29,7 @@ export default function InsurerApp() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-8 font-sans bg-gray-50 min-h-screen">
+    <div className="max-w-4xl mx-auto p-8 font-sans bg-gray-50 min-h-screen text-gray-900">
       <div className="flex justify-between items-center mb-8 border-b pb-4">
         <h1 className="text-3xl font-bold text-gray-800">Insure-X / Finova Operator</h1>
         <div className="flex gap-4">
@@ -90,7 +92,7 @@ export default function InsurerApp() {
           {audits.map((log: any) => {
             const details = JSON.parse(log.details);
             return (
-              <div key={log.id} className="p-4 border bg-white rounded shadow text-sm space-y-2">
+              <div key={log.id} className="p-4 border bg-white rounded shadow text-sm space-y-4">
                 <div className="flex justify-between border-b pb-2">
                   <span className="font-bold text-gray-700">Claim ID: <span className="font-mono">{log.id}</span></span>
                   <span className={`px-2 py-1 rounded font-bold ${log.event_type === 'POLICY_EVALUATED' && details.decision?.triggered ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{log.event_type}</span>
@@ -117,14 +119,38 @@ export default function InsurerApp() {
                       {details.decision.triggered && (
                         <div className="mt-2 text-green-600 font-bold">Payout: ₹{details.payout}</div>
                       )}
+                      
                       {details.criticalRecord && (
-                        <div className="mt-2 text-xs text-gray-500 font-mono break-all">
-                          <b>64-Byte Critical Record (Base64):</b><br/>{details.criticalRecord}
+                        <div className="mt-4">
+                          <button 
+                            onClick={() => setShowQR(showQR === log.id ? null : log.id)} 
+                            className="bg-gray-800 text-white px-4 py-2 rounded"
+                          >
+                            {showQR === log.id ? 'Hide QR' : 'Generate Settlement QR'}
+                          </button>
                         </div>
                       )}
                     </div>
                   )}
                 </div>
+
+                {showQR === log.id && details.criticalRecord && (
+                  <div className="mt-4 p-4 border-2 border-dashed bg-gray-50 flex flex-col items-center justify-center">
+                    <h3 className="font-bold text-lg mb-2 text-center">FINOVA OFFLINE SETTLEMENT</h3>
+                    <div className="text-center mb-4">
+                      <p>Policy: <b>{details.policy}</b></p>
+                      <p>Settlement: <b>₹{details.payout}</b></p>
+                      <p>Record: <b>64 bytes</b></p>
+                      <p className="text-green-600 font-bold mt-2">READY FOR OFFLINE HANDOFF</p>
+                    </div>
+                    <div className="bg-white p-4 inline-block shadow">
+                      <QRCodeSVG value={details.criticalRecord} size={256} />
+                    </div>
+                    <div className="mt-4 text-xs text-gray-500 font-mono break-all max-w-lg text-center">
+                      <b>Base64 Payload:</b><br/>{details.criticalRecord}
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })}

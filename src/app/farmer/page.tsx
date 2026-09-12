@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { getBalance, addTransaction, getPendingTransactions, setLocalState, getLocalState } from '@/lib/idb';
 import { decodeCriticalRecord, encodeCriticalRecord } from '@/domain/protocol';
+import QrScanner from '@/components/QrScanner';
 
 export default function FarmerApp() {
   const [screen, setScreen] = useState('LOGIN');
@@ -13,12 +14,15 @@ export default function FarmerApp() {
   const [queueCount, setQueueCount] = useState(0);
   const [online, setOnline] = useState(true);
   
+  // Scanning state
+  const [isScanning, setIsScanning] = useState(false);
+  const [manualFallback, setManualFallback] = useState('');
+
   useEffect(() => {
     setOnline(navigator.onLine);
     window.addEventListener('online', () => setOnline(true));
     window.addEventListener('offline', () => setOnline(false));
 
-    // Try to load cached session
     getLocalState('session_userId').then(uid => {
       if (uid) {
         setUserId(uid);
@@ -27,7 +31,6 @@ export default function FarmerApp() {
       }
     });
 
-    // Try to load cached products, then update from network
     getLocalState('cached_products').then(p => {
       if (p) setProducts(p);
     });
@@ -99,6 +102,7 @@ export default function FarmerApp() {
       newHash: 'dummy-new',
       status: 'PENDING'
     });
+    alert('₹250 spent offline. Transaction queued for sync.');
     refreshData(userId);
   };
 
@@ -112,7 +116,6 @@ export default function FarmerApp() {
     });
     await res.json();
     alert('Sync complete!');
-    // In a real app we update the tx status to SYNCED
     refreshData(userId);
   };
 
@@ -125,7 +128,7 @@ export default function FarmerApp() {
       }
       const record = await decodeCriticalRecord(buf);
       const success = await addTransaction({
-        id: `${record.policyId}-${record.sequence}`, // deterministic ID prevents double crediting
+        id: `${record.policyId}-${record.sequence}`, // deterministic ID prevents replay
         userId,
         amount: record.payoutAmount,
         type: 'PAYOUT',
@@ -136,13 +139,15 @@ export default function FarmerApp() {
         status: 'PENDING'
       });
       if (success) {
-        alert(`Offline Settlement Accepted! ₹${record.payoutAmount} added to wallet.`);
+        alert(`Settlement Verified ✓\n\nPolicy: ${record.policyId}\n₹${record.payoutAmount} received locally.`);
       } else {
-        alert(`Duplicate offline settlement rejected.`);
+        alert(`Invalid settlement record: ALREADY PROCESSED / REJECTED`);
       }
       refreshData(userId);
+      setIsScanning(false);
     } catch (e: any) {
-      alert(`Invalid Settlement Record: ${e.message}`);
+      alert(`Invalid settlement record: ${e.message}`);
+      setIsScanning(false);
     }
   }
 
@@ -155,29 +160,16 @@ export default function FarmerApp() {
     });
     const data = await res.json();
     if (data.status === 'TRIGGERED' && data.criticalRecordBase64) {
-      await applyCriticalRecord(data.criticalRecordBase64);
+      alert('Payout triggered. In production, this record is sent to Insurer for QR Generation.');
     } else {
       alert(`Status: ${data.status}`);
     }
   };
 
-  const receiveOfflineSettlement = async () => {
-    // Generate a valid critical record directly on the client to simulate NFC/Bluetooth payload reception
-    const record = await encodeCriticalRecord({
-      policyId: activePolicy?.productId || 'drought_shield',
-      sequence: Date.now(),
-      triggered: true,
-      payoutAmount: 10000,
-      oracleValue: 72
-    });
-    // Convert to base64
-    let binary = '';
-    for (let i = 0; i < record.byteLength; i++) binary += String.fromCharCode(record[i]);
-    const b64 = btoa(binary);
-    
-    // Process it
-    await applyCriticalRecord(b64);
-  }
+  const handleManualScan = () => {
+    if (!manualFallback) return;
+    applyCriticalRecord(manualFallback);
+  };
 
   return (
     <div className="max-w-md mx-auto p-4 font-sans text-gray-900">
@@ -223,11 +215,12 @@ export default function FarmerApp() {
         </div>
       )}
 
-      {screen === 'WALLET' && (
+      {screen === 'WALLET' && !isScanning && (
         <div className="space-y-4">
           <div className="p-6 bg-blue-50 border rounded text-center">
-            <h2 className="text-lg">Offline Balance</h2>
+            <h2 className="text-lg">OFFLINE WALLET</h2>
             <div className="text-4xl font-bold text-blue-600">₹{balance}</div>
+            <div className="text-sm text-gray-600 mt-1">Connection: {online ? 'ONLINE' : 'OFFLINE'}</div>
             <button onClick={spendOffline} className="mt-4 px-4 py-2 bg-blue-500 text-white rounded shadow cursor-pointer">Spend ₹250 (Offline)</button>
           </div>
           
@@ -236,21 +229,47 @@ export default function FarmerApp() {
             <button onClick={syncWallet} disabled={!online} className="mt-2 px-4 py-2 bg-green-500 text-white rounded disabled:opacity-50 shadow cursor-pointer">Sync Now</button>
           </div>
 
-          <div className="p-4 border rounded bg-gray-50">
-            <h3 className="font-bold mb-2">Simulate Offline Handover</h3>
-            <button onClick={receiveOfflineSettlement} className="w-full p-2 bg-gray-800 text-white rounded shadow cursor-pointer">
-              📥 Receive 64-Byte Settlement (NFC/Bluetooth)
+          <div className="p-4 border rounded bg-purple-50">
+            <h3 className="font-bold mb-2 text-purple-900">Receive Offline Settlement</h3>
+            <p className="text-sm text-purple-700 mb-4">Transfer payout from Insurer / Shared Phone using QR Code. Works completely offline.</p>
+            <button onClick={() => setIsScanning(true)} className="w-full p-3 bg-purple-600 text-white font-bold rounded shadow cursor-pointer">
+              📷 Scan Settlement QR
             </button>
-            
-            <h3 className="font-bold mt-4 mb-2">Simulate Weather Oracle (Online)</h3>
+          </div>
+
+          <div className="p-4 border rounded bg-gray-50">
+            <h3 className="font-bold mb-2 text-xs text-gray-500">ADMIN: ONLINE WEATHER ORACLE</h3>
             <div className="flex gap-2 text-sm flex-wrap">
               <button onClick={() => simulateOracle([{source:'A', value: 72, timestamp: Date.now()}, {source:'B', value: 74, timestamp: Date.now()}, {source:'C', value: 71, timestamp: Date.now()}])} className="p-2 border rounded bg-white shadow cursor-pointer disabled:opacity-50" disabled={!online}>Healthy (72mm)</button>
               <button onClick={() => simulateOracle([{source:'A', value: 72, timestamp: Date.now()}, {source:'B', value: 74, timestamp: Date.now()}, {source:'C', value: 4, timestamp: Date.now()}])} className="p-2 border rounded bg-white shadow cursor-pointer disabled:opacity-50" disabled={!online}>Outlier (4mm)</button>
-              <button onClick={() => simulateOracle([{source:'A', value: 72, timestamp: Date.now()}, {source:'B', value: 120, timestamp: Date.now()}, {source:'C', value: 4, timestamp: Date.now()}])} className="p-2 border rounded bg-white shadow cursor-pointer disabled:opacity-50" disabled={!online}>Disagreement (HOLD)</button>
+              <button onClick={() => simulateOracle([{source:'A', value: 72, timestamp: Date.now()}, {source:'B', value: 120, timestamp: Date.now()}, {source:'C', value: 4, timestamp: Date.now()}])} className="p-2 border rounded bg-white shadow cursor-pointer disabled:opacity-50" disabled={!online}>Disagreement</button>
             </div>
           </div>
 
           <button onClick={() => setScreen('HOME')} className="w-full p-4 text-gray-500 border rounded bg-white shadow cursor-pointer">Back</button>
+        </div>
+      )}
+
+      {screen === 'WALLET' && isScanning && (
+        <div className="space-y-4">
+          <h2 className="text-xl font-bold">Scan QR Settlement</h2>
+          <div className="bg-white p-4 border rounded shadow">
+             <QrScanner 
+                onScan={(text) => applyCriticalRecord(text)} 
+                onError={(err) => console.log('Scanning...', err)} 
+             />
+          </div>
+          <div className="bg-gray-50 p-4 border rounded mt-4">
+            <h3 className="font-bold text-sm mb-2">Fallback Manual Entry</h3>
+            <input 
+               type="text" 
+               className="w-full border p-2 rounded mb-2" 
+               placeholder="Base64 Payload..." 
+               onChange={e => setManualFallback(e.target.value)}
+            />
+            <button onClick={handleManualScan} className="bg-gray-800 text-white px-4 py-2 rounded text-sm cursor-pointer">Process Payload</button>
+          </div>
+          <button onClick={() => setIsScanning(false)} className="w-full p-4 bg-red-500 text-white rounded shadow mt-4 cursor-pointer">Cancel Scan</button>
         </div>
       )}
     </div>

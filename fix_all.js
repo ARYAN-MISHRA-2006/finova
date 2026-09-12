@@ -1,4 +1,6 @@
-'use client';
+const fs = require('fs');
+
+const code = `'use client';
 
 import { useState, useEffect } from 'react';
 import { setLocalState, getLocalState } from '@/lib/idb';
@@ -177,7 +179,7 @@ export default function FarmerApp() {
 
   // Voice Recognition Handler
   const startVoiceAnswer = () => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const SpeechRecognition = window.SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
       alert("आपके डिवाइस में बोलकर जवाब देने की सुविधा नहीं है। कृपया नंबर चुनें। (Voice recognition not supported. Please select a number.)");
       return;
@@ -238,7 +240,7 @@ export default function FarmerApp() {
               <button 
                 key={icon} 
                 onClick={() => handleImageTap(icon)}
-                className={`aspect-square border-2 rounded-2xl shadow-sm text-4xl flex items-center justify-center cursor-pointer active:scale-95 transition-transform ${sequence.includes(icon) ? 'ring-4 ring-blue-500 bg-blue-50 border-blue-500' : 'bg-white border-gray-100 hover:bg-gray-50'}`}
+                className={\`aspect-square border-2 rounded-2xl shadow-sm text-4xl flex items-center justify-center cursor-pointer active:scale-95 transition-transform \${sequence.includes(icon) ? 'ring-4 ring-blue-500 bg-blue-50 border-blue-500' : 'bg-white border-gray-100 hover:bg-gray-50'}\`}
               >
                 {icon}
               </button>
@@ -495,7 +497,7 @@ export default function FarmerApp() {
                               <div className="flex-grow border-t border-gray-200"></div>
                             </div>
                             
-                            <button onClick={startVoiceAnswer} className={`w-full p-5 rounded-2xl text-xl font-bold cursor-pointer transition-all ${isListeningForAnswer ? 'bg-red-100 text-red-600 border-2 border-red-200 animate-pulse' : 'bg-blue-50 text-blue-800 border-2 border-blue-200'}`}>
+                            <button onClick={startVoiceAnswer} className={\`w-full p-5 rounded-2xl text-xl font-bold cursor-pointer transition-all \${isListeningForAnswer ? 'bg-red-100 text-red-600 border-2 border-red-200 animate-pulse' : 'bg-blue-50 text-blue-800 border-2 border-blue-200'}\`}>
                               🎤 {isListeningForAnswer ? 'सुन रहा है... (Listening...)' : 'बोलकर जवाब दें (Answer by Voice)'}
                             </button>
                           </div>
@@ -557,23 +559,23 @@ export default function FarmerApp() {
 
           {/* BOTTOM NAVIGATION */}
           <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-6 py-4 flex justify-between items-center shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)] max-w-md mx-auto">
-            <button onClick={() => { setTab('HOME'); stopAudio(); }} className={`flex flex-col items-center gap-1 ${tab === 'HOME' ? 'text-green-600' : 'text-gray-400'}`}>
+            <button onClick={() => { setTab('HOME'); stopAudio(); }} className={\`flex flex-col items-center gap-1 \${tab === 'HOME' ? 'text-green-600' : 'text-gray-400'}\`}>
               <span className="text-2xl">🏠</span>
               <span className="text-xs font-bold">होम (Home)</span>
             </button>
-            <button onClick={() => { setTab('INSURANCE'); stopAudio(); if(insuranceView === 'BINDING_PLACEHOLDER') setInsuranceView('LIST'); }} className={`flex flex-col items-center gap-1 ${tab === 'INSURANCE' ? 'text-green-600' : 'text-gray-400'}`}>
+            <button onClick={() => { setTab('INSURANCE'); stopAudio(); if(insuranceView === 'BINDING_PLACEHOLDER') setInsuranceView('LIST'); }} className={\`flex flex-col items-center gap-1 \${tab === 'INSURANCE' ? 'text-green-600' : 'text-gray-400'}\`}>
               <span className="text-2xl">🛡️</span>
               <span className="text-xs font-bold">बीमा (Insurance)</span>
             </button>
-            <button onClick={() => { setTab('WALLET'); stopAudio(); }} className={`flex flex-col items-center gap-1 ${tab === 'WALLET' ? 'text-green-600' : 'text-gray-400'}`}>
+            <button onClick={() => { setTab('WALLET'); stopAudio(); }} className={\`flex flex-col items-center gap-1 \${tab === 'WALLET' ? 'text-green-600' : 'text-gray-400'}\`}>
               <span className="text-2xl">💰</span>
               <span className="text-xs font-bold">वॉलेट (Wallet)</span>
             </button>
-            <button onClick={() => { setTab('VOICE'); stopAudio(); }} className={`flex flex-col items-center gap-1 ${tab === 'VOICE' ? 'text-green-600' : 'text-gray-400'}`}>
+            <button onClick={() => { setTab('VOICE'); stopAudio(); }} className={\`flex flex-col items-center gap-1 \${tab === 'VOICE' ? 'text-green-600' : 'text-gray-400'}\`}>
               <span className="text-2xl">🔊</span>
               <span className="text-xs font-bold">आवाज़ (Voice)</span>
             </button>
-            <button onClick={() => { setTab('PROFILE'); stopAudio(); }} className={`flex flex-col items-center gap-1 ${tab === 'PROFILE' ? 'text-green-600' : 'text-gray-400'}`}>
+            <button onClick={() => { setTab('PROFILE'); stopAudio(); }} className={\`flex flex-col items-center gap-1 \${tab === 'PROFILE' ? 'text-green-600' : 'text-gray-400'}\`}>
               <span className="text-2xl">👤</span>
               <span className="text-xs font-bold">प्रोफ़ाइल (Profile)</span>
             </button>
@@ -583,3 +585,6 @@ export default function FarmerApp() {
     </div>
   );
 }
+`;
+
+fs.writeFileSync('src/app/farmer/page.tsx', code);

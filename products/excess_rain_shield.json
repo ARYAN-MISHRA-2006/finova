@@ -1,0 +1,18 @@
+{
+  "productId": "excess_rain_shield",
+  "name": "Excess Rain Shield",
+  "crop": "groundnut",
+  "periodDays": 30,
+  "trigger": {
+    "metric": "rainfall",
+    "operator": ">",
+    "threshold": 300,
+    "unit": "mm"
+  },
+  "payout": {
+    "amount": 15000,
+    "currency": "INR"
+  },
+  "aggregation": "median",
+  "disagreement": "HOLD"
+}

@@ -78,3 +78,13 @@ export async function getLocalState(key: string) {
   if (!db) return null;
   return await db.get('keyval', key);
 }
+
+export async function updateTransactionStatus(txId: string, status: 'SYNCED' | 'REJECTED') {
+  const db = await getDB();
+  if (!db) return;
+  const tx = await db.get('transactions', txId);
+  if (tx) {
+    tx.status = status;
+    await db.put('transactions', tx);
+  }
+}

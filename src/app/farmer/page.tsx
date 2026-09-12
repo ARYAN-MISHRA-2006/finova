@@ -58,7 +58,7 @@ export default function FarmerApp() {
   };
 
   const handleImageTap = (icon: string) => {
-    if (sequence.length < 3) {
+    if (!sequence.includes(icon) && sequence.length < 3) {
       setSequence([...sequence, icon]);
       setAuthError(false);
     }
@@ -130,7 +130,7 @@ export default function FarmerApp() {
               <button 
                 key={icon} 
                 onClick={() => handleImageTap(icon)}
-                className="aspect-square bg-white border-2 border-gray-100 rounded-2xl shadow-sm text-4xl flex items-center justify-center hover:bg-gray-50 cursor-pointer active:scale-95 transition-transform"
+                className={`aspect-square border-2 rounded-2xl shadow-sm text-4xl flex items-center justify-center cursor-pointer active:scale-95 transition-transform ${sequence.includes(icon) ? 'ring-4 ring-blue-500 bg-blue-50 border-blue-500' : 'bg-white border-gray-100 hover:bg-gray-50'}`}
               >
                 {icon}
               </button>

@@ -735,7 +735,7 @@ export default function FarmerApp() {
             <button onClick={() => { setTab('HOME'); stopAudio(); }} className={`flex flex-col items-center gap-1 ${tab === 'HOME' ? 'text-green-600' : 'text-gray-400'}`}><span className="text-2xl">🏠</span><span className="text-xs font-bold">होम</span></button>
             <button onClick={() => { setTab('INSURANCE'); stopAudio(); setInsuranceView('LIST'); }} className={`flex flex-col items-center gap-1 ${tab === 'INSURANCE' ? 'text-green-600' : 'text-gray-400'}`}><span className="text-2xl">🛡️</span><span className="text-xs font-bold">बीमा</span></button>
             <button onClick={() => { setTab('WALLET'); stopAudio(); }} className={`flex flex-col items-center gap-1 ${tab === 'WALLET' ? 'text-green-600' : 'text-gray-400'}`}><span className="text-2xl">💰</span><span className="text-xs font-bold">वॉलेट</span></button>
-            <button onClick={() => { setTab('VOICE'); stopAudio(); }} className={`flex flex-col items-center gap-1 ${tab === 'VOICE' ? 'text-green-600' : 'text-gray-400'}`}><span className="text-2xl">🔊</span><span className="text-xs font-bold">आवाज़</span></button>
+            <button onClick={() => { setTab('VOICE'); stopAudio(); }} className={`flex flex-col items-center gap-1 ${tab === 'VOICE' ? 'text-green-600' : 'text-gray-400'}`}><span className="text-2xl">🔊</span><span className="text-xs font-bold">Voice</span></button>
             <button onClick={() => { setTab('PROFILE'); stopAudio(); }} className={`flex flex-col items-center gap-1 ${tab === 'PROFILE' ? 'text-green-600' : 'text-gray-400'}`}><span className="text-2xl">👤</span><span className="text-xs font-bold">प्रोफ़ाइल</span></button>
           </div>
         </>

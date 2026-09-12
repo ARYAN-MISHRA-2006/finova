@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { setLocalState, getLocalState, getBalance, addTransaction, getPendingTransactions, updateTransactionStatus, WalletTransaction } from '@/lib/idb';
+import { setLocalState, getLocalState, getBalance, addTransaction, getPendingTransactions, updateTransactionStatus, WalletTransaction, getProducts } from '@/lib/idb';
 import { ProductConfig, Policy, bindPolicy, evaluatePolicy, EvaluationRecord } from '@/domain/policy';
 import { validateReading, OracleReading } from '@/domain/oracle';
 
@@ -11,63 +11,7 @@ const PASSWORDS = {
   Sita: ['🐄', '☀️', '💧']
 };
 
-const AVAILABLE_PRODUCTS: ProductConfig[] = [
-  {
-    id: "drought-shield-v1",
-    version: 1,
-    name: "Drought Shield",
-    crop: "मूंगफली (Groundnut)",
-    premium: 250,
-    payout: 10000,
-    coverageDays: 30,
-    trigger: {
-      index: "rainfall",
-      aggregation: "median",
-      operator: "<",
-      threshold: 100,
-      periodDays: 30
-    },
-    oracleConfig: {
-      requiredSources: 3,
-      minimumValidSources: 2,
-      maxSourceAgeMs: 3600000,
-      maxDisagreementTolerance: 50
-    },
-    // Adding UI fields not strictly in engine config but needed for display
-    ...({
-      description: "अगर बीमा अवधि के दौरान आपके क्षेत्र में बारिश 100 mm से कम रहती है, तो आपको ₹10,000 का भुगतान मिलेगा।",
-      voiceText: "यह सूखे से बचाव का बीमा है। यदि बीमा अवधि के दौरान आपके क्षेत्र में बारिश तय सीमा से कम रहती है, तो आपको दस हजार रुपये का भुगतान मिलेगा। इस बीमा की कीमत दो सौ पचास रुपये है और इसकी अवधि तीस दिन है।",
-      status: "PUBLISHED"
-    } as any)
-  },
-  {
-    id: "flood-protect-v1",
-    version: 1,
-    name: "Flood Protect",
-    crop: "धान (Paddy)",
-    premium: 300,
-    payout: 15000,
-    coverageDays: 60,
-    trigger: {
-      index: "rainfall",
-      aggregation: "median",
-      operator: ">",
-      threshold: 300,
-      periodDays: 60
-    },
-    oracleConfig: {
-      requiredSources: 3,
-      minimumValidSources: 2,
-      maxSourceAgeMs: 3600000,
-      maxDisagreementTolerance: 50
-    },
-    ...({
-      description: "अगर बीमा अवधि के दौरान आपके क्षेत्र में बारिश 300 mm से अधिक होती है, तो आपको ₹15,000 का भुगतान मिलेगा।",
-      voiceText: "",
-      status: "DRAFT"
-    } as any)
-  }
-];
+
 
 export default function FarmerApp() {
   const [screen, setScreen] = useState<'LOGIN_PROFILES' | 'IMAGE_AUTH' | 'MAIN_APP'>('LOGIN_PROFILES');
@@ -82,6 +26,7 @@ export default function FarmerApp() {
   // App state
   const [online, setOnline] = useState(true);
   const [activePolicy, setActivePolicy] = useState<Policy | null>(null);
+  const [availableProducts, setAvailableProducts] = useState<ProductConfig[]>([]);
   const [balance, setBalance] = useState<number>(0);
   const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
   const [spendAmount, setSpendAmount] = useState('');
@@ -118,8 +63,9 @@ export default function FarmerApp() {
       if (uid === 'Ramu' || uid === 'Sita') {
         setUserId(uid);
         setScreen('MAIN_APP');
-        loadPolicyForUser(uid);
+                loadPolicyForUser(uid);
         loadWalletData(uid);
+        getProducts().then(setAvailableProducts);
         
         // Give initial 10k if empty (just for demo purposes to match requirements)
         // In a real app this would come from a payout event
@@ -513,7 +459,7 @@ export default function FarmerApp() {
                       </div>
                       
                       <div className="space-y-4">
-                        {AVAILABLE_PRODUCTS.filter((p: any) => p.status === 'PUBLISHED').map(p => (
+                        {availableProducts.filter((p: any) => p.status === 'PUBLISHED').map(p => (
                           <div key={p.id} className="bg-white rounded-3xl p-6 shadow-md border border-gray-100 relative overflow-hidden">
                             <div className="flex items-center gap-3 mb-4 border-b border-gray-50 pb-4">
                               <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-2xl">🛡️</div>

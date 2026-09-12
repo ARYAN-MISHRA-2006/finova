@@ -30,13 +30,13 @@ export default function AppOpening() {
           </button>
           
           <button 
-            onClick={() => alert('Insurer portal coming soon. For testing, navigate to /insurer')}
+            onClick={() => router.push('/insurer')}
             className="w-full p-5 bg-gray-50 border-2 border-gray-200 rounded-2xl flex items-center cursor-pointer transition-colors opacity-70"
           >
             <span className="text-4xl mr-4">🏦</span>
             <div className="text-left">
               <span className="text-xl font-bold text-gray-700 block">बीमाकर्ता (Insurer)</span>
-              <span className="text-xs text-gray-500 font-medium uppercase tracking-wide">जल्द आ रहा है (Coming soon)</span>
+              <span className="text-xs text-gray-500 font-medium uppercase tracking-wide">डेस्कटॉप पोर्टल (Desktop Portal)</span>
             </div>
           </button>
         </div>

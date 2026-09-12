@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { getBalance, addTransaction, getPendingTransactions, setLocalState, getLocalState } from '@/lib/idb';
 import { decodeCriticalRecord, encodeCriticalRecord } from '@/domain/protocol';
 import QrScanner from '@/components/QrScanner';
+import { QRCodeSVG } from 'qrcode.react';
 
 export default function FarmerApp() {
   const [screen, setScreen] = useState('LOGIN');
@@ -17,6 +18,7 @@ export default function FarmerApp() {
   // Scanning state
   const [isScanning, setIsScanning] = useState(false);
   const [manualFallback, setManualFallback] = useState('');
+  const [dummyQR, setDummyQR] = useState<string | null>(null);
 
   useEffect(() => {
     setOnline(navigator.onLine);
@@ -145,6 +147,7 @@ export default function FarmerApp() {
       }
       refreshData(userId);
       setIsScanning(false);
+      setDummyQR(null);
     } catch (e: any) {
       alert(`Invalid settlement record: ${e.message}`);
       setIsScanning(false);
@@ -164,6 +167,21 @@ export default function FarmerApp() {
     } else {
       alert(`Status: ${data.status}`);
     }
+  };
+
+  const generateDummyQR = async () => {
+    const record = await encodeCriticalRecord({
+      policyId: activePolicy?.productId || 'drought_shield',
+      sequence: Date.now(),
+      triggered: true,
+      payoutAmount: 10000,
+      oracleValue: 72
+    });
+    let binary = '';
+    for (let i = 0; i < record.byteLength; i++) binary += String.fromCharCode(record[i]);
+    const b64 = btoa(binary);
+    setDummyQR(b64);
+    setManualFallback(b64);
   };
 
   const handleManualScan = () => {
@@ -260,17 +278,30 @@ export default function FarmerApp() {
                 onError={(err) => console.log('Scanning...', err)} 
              />
           </div>
+          
+          <div className="bg-blue-50 p-4 border border-blue-200 rounded mt-4">
+             <h3 className="font-bold text-sm mb-2 text-blue-800">Generate Dummy For Prototype Demo</h3>
+             <button onClick={generateDummyQR} className="bg-blue-600 text-white px-4 py-2 rounded text-sm w-full mb-4 shadow cursor-pointer">Generate Dummy QR (₹10,000)</button>
+             {dummyQR && (
+               <div className="flex flex-col items-center bg-white p-4 rounded shadow">
+                  <QRCodeSVG value={dummyQR} size={200} />
+                  <p className="text-xs text-gray-500 mt-2 font-mono text-center break-all">{dummyQR}</p>
+               </div>
+             )}
+          </div>
+
           <div className="bg-gray-50 p-4 border rounded mt-4">
             <h3 className="font-bold text-sm mb-2">Fallback Manual Entry</h3>
             <input 
                type="text" 
                className="w-full border p-2 rounded mb-2" 
                placeholder="Base64 Payload..." 
+               value={manualFallback}
                onChange={e => setManualFallback(e.target.value)}
             />
-            <button onClick={handleManualScan} className="bg-gray-800 text-white px-4 py-2 rounded text-sm cursor-pointer">Process Payload</button>
+            <button onClick={handleManualScan} className="bg-gray-800 text-white px-4 py-2 rounded text-sm w-full cursor-pointer">Process Payload</button>
           </div>
-          <button onClick={() => setIsScanning(false)} className="w-full p-4 bg-red-500 text-white rounded shadow mt-4 cursor-pointer">Cancel Scan</button>
+          <button onClick={() => { setIsScanning(false); setDummyQR(null); }} className="w-full p-4 bg-red-500 text-white rounded shadow mt-4 cursor-pointer">Cancel Scan</button>
         </div>
       )}
     </div>

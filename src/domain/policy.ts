@@ -39,7 +39,7 @@ export function bindPolicy(product: ProductConfig, farmerId: string): Policy {
   const endDate = new Date(startDate.getTime() + product.coverageDays * 24 * 60 * 60 * 1000);
   
   return {
-    policyId: `POL-\${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
+    policyId: `POL-${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
     productId: product.id,
     productVersion: product.version,
     farmerId: farmerId,
@@ -77,7 +77,7 @@ export function evaluatePolicy(
   const evaluatedAt = Date.now();
   
   const record: EvaluationRecord = {
-    evaluationId: `EVAL-\${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
+    evaluationId: `EVAL-${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
     policyId: policy.policyId,
     productId: policy.productId,
     productVersion: policy.productVersion,

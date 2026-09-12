@@ -1,4 +1,6 @@
-'use client';
+const fs = require('fs');
+
+const code = `'use client';
 
 import { useState, useEffect } from 'react';
 import { setLocalState, getLocalState, getBalance, addTransaction, getPendingTransactions, updateTransactionStatus, WalletTransaction, getProducts } from '@/lib/idb';
@@ -65,7 +67,7 @@ export default function FarmerApp() {
             const pending = await getPendingTransactions(uid);
             if (pending.length === 0) {
                await addTransaction({
-                 id: `TX-${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
+                 id: \`TX-\${Math.random().toString(36).substr(2, 9).toUpperCase()}\`,
                  userId: uid,
                  amount: 10000,
                  type: 'PAYOUT',
@@ -99,7 +101,7 @@ export default function FarmerApp() {
   }, [effectiveOnline, userId, screen]);
 
   const loadPoliciesForUser = async (uid: string) => {
-    const policies = await getLocalState(`policies_${uid}`) || [];
+    const policies = await getLocalState(\`policies_\${uid}\`) || [];
     setActivePolicies(policies);
   };
 
@@ -263,7 +265,7 @@ export default function FarmerApp() {
       const newPolicy = bindPolicy(selectedProduct, userId);
       existing.push(newPolicy);
       
-      await setLocalState(`policies_${userId}`, existing);
+      await setLocalState(\`policies_\${userId}\`, existing);
       setActivePolicies(existing);
       setJustPurchasedPolicy(newPolicy);
       setInsuranceView('ACTIVE_POLICY');
@@ -281,7 +283,7 @@ export default function FarmerApp() {
     }
 
     const tx: WalletTransaction = {
-      id: `TX-${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
+      id: \`TX-\${Math.random().toString(36).substr(2, 9).toUpperCase()}\`,
       userId: userId,
       amount: -amount,
       type: 'SPEND',
@@ -335,7 +337,7 @@ export default function FarmerApp() {
               <button 
                 key={icon} 
                 onClick={() => handleImageTap(icon)}
-                className={`aspect-square border-2 rounded-2xl shadow-sm text-4xl flex items-center justify-center cursor-pointer active:scale-95 transition-transform ${sequence.includes(icon) ? 'ring-4 ring-blue-500 bg-blue-50 border-blue-500' : 'bg-white border-gray-100 hover:bg-gray-50'}`}
+                className={\`aspect-square border-2 rounded-2xl shadow-sm text-4xl flex items-center justify-center cursor-pointer active:scale-95 transition-transform \${sequence.includes(icon) ? 'ring-4 ring-blue-500 bg-blue-50 border-blue-500' : 'bg-white border-gray-100 hover:bg-gray-50'}\`}
               >
                 {icon}
               </button>
@@ -552,7 +554,7 @@ export default function FarmerApp() {
                               <div className="flex-grow border-t border-gray-200"></div><span className="flex-shrink-0 mx-4 text-gray-400 font-bold">या (OR)</span><div className="flex-grow border-t border-gray-200"></div>
                             </div>
                             
-                            <button onClick={() => startVoiceAnswer(selectedProduct.payout)} className={`w-full p-5 rounded-2xl text-xl font-bold cursor-pointer transition-all ${isListeningForAnswer ? 'bg-red-100 text-red-600 border-2 border-red-200 animate-pulse' : 'bg-blue-50 text-blue-800 border-2 border-blue-200'}`}>
+                            <button onClick={() => startVoiceAnswer(selectedProduct.payout)} className={\`w-full p-5 rounded-2xl text-xl font-bold cursor-pointer transition-all \${isListeningForAnswer ? 'bg-red-100 text-red-600 border-2 border-red-200 animate-pulse' : 'bg-blue-50 text-blue-800 border-2 border-blue-200'}\`}>
                               🎤 {isListeningForAnswer ? 'सुन रहा है...' : 'बोलकर जवाब दें'}
                             </button>
                           </div>
@@ -639,7 +641,7 @@ export default function FarmerApp() {
                        <span className="font-bold text-gray-700 text-sm">Network Simulator (Dev Only)</span>
                        <button 
                          onClick={() => setSimulatedOffline(!simulatedOffline)}
-                         className={`px-4 py-2 rounded-xl font-bold text-sm ${simulatedOffline ? 'bg-red-500 text-white' : 'bg-green-500 text-white'}`}
+                         className={\`px-4 py-2 rounded-xl font-bold text-sm \${simulatedOffline ? 'bg-red-500 text-white' : 'bg-green-500 text-white'}\`}
                        >
                          {simulatedOffline ? '🔴 OFFLINE' : '🟢 ONLINE'}
                        </button>
@@ -696,7 +698,7 @@ export default function FarmerApp() {
                                 <span className="text-xs text-gray-500">{new Date(tx.timestamp).toLocaleString()}</span>
                               </div>
                               <div className="flex flex-col items-end">
-                                <span className={`font-bold text-lg ${tx.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                <span className={\`font-bold text-lg \${tx.amount > 0 ? 'text-green-600' : 'text-red-600'}\`}>
                                   {tx.amount > 0 ? '+' : '-'}₹{Math.abs(tx.amount).toLocaleString()}
                                 </span>
                                 {tx.status === 'PENDING' ? (
@@ -732,14 +734,17 @@ export default function FarmerApp() {
           </div>
 
           <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-6 py-4 flex justify-between items-center shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)] max-w-md mx-auto">
-            <button onClick={() => { setTab('HOME'); stopAudio(); }} className={`flex flex-col items-center gap-1 ${tab === 'HOME' ? 'text-green-600' : 'text-gray-400'}`}><span className="text-2xl">🏠</span><span className="text-xs font-bold">होम</span></button>
-            <button onClick={() => { setTab('INSURANCE'); stopAudio(); setInsuranceView('LIST'); }} className={`flex flex-col items-center gap-1 ${tab === 'INSURANCE' ? 'text-green-600' : 'text-gray-400'}`}><span className="text-2xl">🛡️</span><span className="text-xs font-bold">बीमा</span></button>
-            <button onClick={() => { setTab('WALLET'); stopAudio(); }} className={`flex flex-col items-center gap-1 ${tab === 'WALLET' ? 'text-green-600' : 'text-gray-400'}`}><span className="text-2xl">💰</span><span className="text-xs font-bold">वॉलेट</span></button>
-            <button onClick={() => { setTab('VOICE'); stopAudio(); }} className={`flex flex-col items-center gap-1 ${tab === 'VOICE' ? 'text-green-600' : 'text-gray-400'}`}><span className="text-2xl">🔊</span><span className="text-xs font-bold">आवाज़</span></button>
-            <button onClick={() => { setTab('PROFILE'); stopAudio(); }} className={`flex flex-col items-center gap-1 ${tab === 'PROFILE' ? 'text-green-600' : 'text-gray-400'}`}><span className="text-2xl">👤</span><span className="text-xs font-bold">प्रोफ़ाइल</span></button>
+            <button onClick={() => { setTab('HOME'); stopAudio(); }} className={\`flex flex-col items-center gap-1 \${tab === 'HOME' ? 'text-green-600' : 'text-gray-400'}\`}><span className="text-2xl">🏠</span><span className="text-xs font-bold">होम</span></button>
+            <button onClick={() => { setTab('INSURANCE'); stopAudio(); setInsuranceView('LIST'); }} className={\`flex flex-col items-center gap-1 \${tab === 'INSURANCE' ? 'text-green-600' : 'text-gray-400'}\`}><span className="text-2xl">🛡️</span><span className="text-xs font-bold">बीमा</span></button>
+            <button onClick={() => { setTab('WALLET'); stopAudio(); }} className={\`flex flex-col items-center gap-1 \${tab === 'WALLET' ? 'text-green-600' : 'text-gray-400'}\`}><span className="text-2xl">💰</span><span className="text-xs font-bold">वॉलेट</span></button>
+            <button onClick={() => { setTab('VOICE'); stopAudio(); }} className={\`flex flex-col items-center gap-1 \${tab === 'VOICE' ? 'text-green-600' : 'text-gray-400'}\`}><span className="text-2xl">🔊</span><span className="text-xs font-bold">आवाज़</span></button>
+            <button onClick={() => { setTab('PROFILE'); stopAudio(); }} className={\`flex flex-col items-center gap-1 \${tab === 'PROFILE' ? 'text-green-600' : 'text-gray-400'}\`}><span className="text-2xl">👤</span><span className="text-xs font-bold">प्रोफ़ाइल</span></button>
           </div>
         </>
       )}
     </div>
   );
 }
+`;
+
+fs.writeFileSync('src/app/farmer/page.tsx', code);

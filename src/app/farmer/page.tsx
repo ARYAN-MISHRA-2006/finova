@@ -19,17 +19,31 @@ export default function FarmerApp() {
   const [isScanning, setIsScanning] = useState(false);
   const [manualFallback, setManualFallback] = useState('');
   const [dummyQR, setDummyQR] = useState<string | null>(null);
+  const [successScreen, setSuccessScreen] = useState<{ amount: number, policy: string } | null>(null);
 
   useEffect(() => {
     setOnline(navigator.onLine);
     window.addEventListener('online', () => setOnline(true));
     window.addEventListener('offline', () => setOnline(false));
 
+    // Handle deep link / URL parameter if scanned from standard phone camera
+    const params = new URLSearchParams(window.location.search);
+    const claimPayload = params.get('claim');
+    
     getLocalState('session_userId').then(uid => {
-      if (uid) {
-        setUserId(uid);
-        setScreen('HOME');
-        refreshData(uid);
+      const activeUid = uid || 'FarmerA'; // fallback if they just scanned from fresh browser
+      if (!uid) {
+        setLocalState('session_userId', 'FarmerA');
+      }
+      setUserId(activeUid);
+      setScreen('HOME');
+      refreshData(activeUid);
+      
+      if (claimPayload) {
+        // Clear the URL bar
+        window.history.replaceState({}, document.title, window.location.pathname);
+        setScreen('WALLET');
+        applyCriticalRecord(claimPayload, activeUid);
       }
     });
 
@@ -99,7 +113,7 @@ export default function FarmerApp() {
       amount: -250,
       type: 'SPEND',
       timestamp: Date.now(),
-      sequence: Date.now(), // naive sequence
+      sequence: Date.now(),
       prevHash: 'dummy-prev',
       newHash: 'dummy-new',
       status: 'PENDING'
@@ -121,8 +135,15 @@ export default function FarmerApp() {
     refreshData(userId);
   };
 
-  const applyCriticalRecord = async (base64Str: string) => {
+  const applyCriticalRecord = async (payload: string, uidToUse?: string) => {
     try {
+      const activeUid = uidToUse || userId;
+      // Extract base64 if it's a full URL instead of raw base64
+      let base64Str = payload;
+      if (payload.includes('claim=')) {
+        base64Str = new URL(payload).searchParams.get('claim') || payload;
+      }
+      
       const binaryString = atob(base64Str);
       const buf = new Uint8Array(binaryString.length);
       for (let i = 0; i < binaryString.length; i++) {
@@ -131,7 +152,7 @@ export default function FarmerApp() {
       const record = await decodeCriticalRecord(buf);
       const success = await addTransaction({
         id: `${record.policyId}-${record.sequence}`, // deterministic ID prevents replay
-        userId,
+        userId: activeUid,
         amount: record.payoutAmount,
         type: 'PAYOUT',
         timestamp: Date.now(),
@@ -141,11 +162,11 @@ export default function FarmerApp() {
         status: 'PENDING'
       });
       if (success) {
-        alert(`Settlement Verified ✓\n\nPolicy: ${record.policyId}\n₹${record.payoutAmount} received locally.`);
+        setSuccessScreen({ amount: record.payoutAmount, policy: record.policyId });
       } else {
         alert(`Invalid settlement record: ALREADY PROCESSED / REJECTED`);
       }
-      refreshData(userId);
+      refreshData(activeUid);
       setIsScanning(false);
       setDummyQR(null);
     } catch (e: any) {
@@ -180,7 +201,10 @@ export default function FarmerApp() {
     let binary = '';
     for (let i = 0; i < record.byteLength; i++) binary += String.fromCharCode(record[i]);
     const b64 = btoa(binary);
-    setDummyQR(b64);
+    
+    // Create a URL so standard phone cameras can open it
+    const url = `${window.location.origin}/farmer?claim=${b64}`;
+    setDummyQR(url);
     setManualFallback(b64);
   };
 
@@ -188,6 +212,18 @@ export default function FarmerApp() {
     if (!manualFallback) return;
     applyCriticalRecord(manualFallback);
   };
+
+  if (successScreen) {
+    return (
+      <div className="max-w-md mx-auto p-8 font-sans text-center min-h-screen flex flex-col justify-center items-center bg-green-50">
+        <div className="w-24 h-24 bg-green-500 rounded-full flex items-center justify-center text-white text-5xl mb-6 shadow-lg">✓</div>
+        <h1 className="text-3xl font-bold text-green-800 mb-2">Payment Received!</h1>
+        <p className="text-5xl font-bold text-green-600 mb-6">₹{successScreen.amount}</p>
+        <p className="text-gray-600 mb-8">Settlement Verified for Policy:<br/><b>{successScreen.policy}</b></p>
+        <button onClick={() => setSuccessScreen(null)} className="w-full p-4 bg-green-600 text-white rounded-lg shadow-lg font-bold text-lg cursor-pointer">Go to Wallet</button>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-md mx-auto p-4 font-sans text-gray-900">
@@ -285,7 +321,7 @@ export default function FarmerApp() {
              {dummyQR && (
                <div className="flex flex-col items-center bg-white p-4 rounded shadow">
                   <QRCodeSVG value={dummyQR} size={200} />
-                  <p className="text-xs text-gray-500 mt-2 font-mono text-center break-all">{dummyQR}</p>
+                  
                </div>
              )}
           </div>

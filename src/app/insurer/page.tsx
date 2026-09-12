@@ -144,7 +144,7 @@ export default function InsurerApp() {
                       <p className="text-green-600 font-bold mt-2">READY FOR OFFLINE HANDOFF</p>
                     </div>
                     <div className="bg-white p-4 inline-block shadow">
-                      <QRCodeSVG value={details.criticalRecord} size={256} />
+                      <QRCodeSVG value={`${typeof window !== "undefined" ? window.location.origin : ""}/farmer?claim=${details.criticalRecord}`} size={256} />
                     </div>
                     <div className="mt-4 text-xs text-gray-500 font-mono break-all max-w-lg text-center">
                       <b>Base64 Payload:</b><br/>{details.criticalRecord}

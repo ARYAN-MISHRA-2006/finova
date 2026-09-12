@@ -454,11 +454,11 @@ export default function FarmerApp() {
                               <span className="bg-green-100 text-green-800 font-bold px-3 py-1 rounded-full text-xs">🟢 सक्रिय</span>
                             </div>
                             <div className="flex justify-between items-center mb-2">
-                              <span className="text-gray-500 font-medium">प्रीमियम</span>
+                              <span className="text-gray-500 font-medium">प्रीमियम (Premium)</span>
                               <span className="font-bold text-gray-800">₹{policy.premium}</span>
                             </div>
                             <div className="flex justify-between items-center pt-2">
-                              <span className="text-gray-500 font-medium">💰 भुगतान</span>
+                              <span className="text-gray-500 font-medium">💰 भुगतान (Payout)</span>
                               <span className="text-xl font-extrabold text-green-600">₹{policy.payoutAmount.toLocaleString()}</span>
                             </div>
                             <div className="text-xs text-gray-400 text-center mt-4 font-mono">{policy.policyId}</div>
@@ -489,7 +489,7 @@ export default function FarmerApp() {
                                 <div key={policy.policyId} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex justify-between items-center">
                                   <div>
                                     <h3 className="font-bold text-gray-800">{product ? product.name : policy.productId}</h3>
-                                    <p className="text-xs text-gray-500 mt-1">₹{policy.payoutAmount.toLocaleString()} भुगतान</p>
+                                    <p className="text-xs text-gray-500 mt-1">₹{policy.payoutAmount.toLocaleString()} भुगतान (Payout)</p>
                                   </div>
                                   <span className="bg-green-100 text-green-800 font-bold px-3 py-1 rounded-full text-xs">🟢 सक्रिय</span>
                                 </div>
@@ -515,10 +515,10 @@ export default function FarmerApp() {
                                 </div>
                                 
                                 <div className="space-y-3 mb-6">
-                                  <div className="flex justify-between items-center"><span className="text-gray-500">फ़सल</span><span className="font-bold">🌾 {p.crop}</span></div>
-                                  <div className="flex justify-between items-center"><span className="text-gray-500">प्रीमियम</span><span className="font-bold text-orange-600">₹{p.premium}</span></div>
-                                  <div className="flex justify-between items-center"><span className="text-gray-500">भुगतान</span><span className="font-bold text-green-600">₹{p.payout.toLocaleString()}</span></div>
-                                  <div className="flex justify-between items-center"><span className="text-gray-500">अवधि</span><span className="font-bold">{p.coverageDays} दिन</span></div>
+                                  <div className="flex justify-between items-center"><span className="text-gray-500">फ़सल (Crop)</span><span className="font-bold">🌾 {p.crop}</span></div>
+                                  <div className="flex justify-between items-center"><span className="text-gray-500">प्रीमियम (Premium)</span><span className="font-bold text-orange-600">₹{p.premium}</span></div>
+                                  <div className="flex justify-between items-center"><span className="text-gray-500">भुगतान (Payout)</span><span className="font-bold text-green-600">₹{p.payout.toLocaleString()}</span></div>
+                                  <div className="flex justify-between items-center"><span className="text-gray-500">अवधि (Duration)</span><span className="font-bold">{p.coverageDays} दिन</span></div>
                                 </div>
                                 
                                 <button onClick={() => { setSelectedProduct(p); setInsuranceView('DETAILS'); }} className="w-full p-4 bg-green-600 text-white font-bold rounded-2xl cursor-pointer shadow-md">[बीमा लें]</button>
@@ -541,27 +541,27 @@ export default function FarmerApp() {
 
                         <div className="space-y-4 text-lg">
                           <div className="flex justify-between"><span className="text-gray-500">🌾 फसल</span><span className="font-bold">{selectedProduct.crop}</span></div>
-                          <div className="flex justify-between"><span className="text-gray-500">💰 प्रीमियम</span><span className="font-bold text-orange-600">₹{selectedProduct.premium}</span></div>
-                          <div className="flex justify-between"><span className="text-gray-500">📅 अवधि</span><span className="font-bold">{selectedProduct.coverageDays} दिन</span></div>
-                          <div className="flex justify-between"><span className="text-gray-500">🌧️ ट्रिगर</span><span className="font-bold text-blue-600">बारिश {selectedProduct.trigger.operator} {selectedProduct.trigger.threshold} mm</span></div>
-                          <div className="flex justify-between border-t border-gray-100 pt-4"><span className="text-gray-500">💵 भुगतान</span><span className="font-bold text-green-600 text-xl">₹{selectedProduct.payout.toLocaleString()}</span></div>
+                          <div className="flex justify-between"><span className="text-gray-500">💰 प्रीमियम (Premium)</span><span className="font-bold text-orange-600">₹{selectedProduct.premium}</span></div>
+                          <div className="flex justify-between"><span className="text-gray-500">📅 अवधि (Duration)</span><span className="font-bold">{selectedProduct.coverageDays} दिन</span></div>
+                          <div className="flex justify-between"><span className="text-gray-500">🌧️ ट्रिगर (Trigger)</span><span className="font-bold text-blue-600">बारिश (Rainfall) {selectedProduct.trigger.operator} {selectedProduct.trigger.threshold} mm</span></div>
+                          <div className="flex justify-between border-t border-gray-100 pt-4"><span className="text-gray-500">💵 भुगतान (Payout)</span><span className="font-bold text-green-600 text-xl">₹{selectedProduct.payout.toLocaleString()}</span></div>
                         </div>
 
                         <div className="mt-8 bg-blue-50 p-4 rounded-2xl border border-blue-100 text-blue-900 leading-relaxed font-medium">{getInsuranceExplanation(selectedProduct)}</div>
 
                         <div className="mt-6 border-t border-gray-100 pt-6">
-                          <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">🔊 इस बीमा के बारे में सुनें</h3>
+                          <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">🔊 इस बीमा के बारे में सुनें (Listen about this insurance)</h3>
                           {!isPlayingAudio ? (
                             <button onClick={() => speakDescription(getInsuranceExplanation(selectedProduct))} className="w-full p-4 bg-gray-100 text-gray-800 font-bold rounded-2xl flex items-center justify-center gap-2 cursor-pointer">🔊 सुनें (Listen)</button>
                           ) : (
                             <div className="flex gap-2">
                               {isAudioPaused ? (
-                                <button onClick={resumeAudio} className="flex-1 p-4 bg-blue-100 text-blue-800 font-bold rounded-2xl cursor-pointer text-sm">▶️ जारी रखें</button>
+                                <button onClick={resumeAudio} className="flex-1 p-4 bg-blue-100 text-blue-800 font-bold rounded-2xl cursor-pointer text-sm">▶️ जारी रखें (Continue)</button>
                               ) : (
-                                <button onClick={pauseAudio} className="flex-1 p-4 bg-yellow-100 text-yellow-800 font-bold rounded-2xl cursor-pointer text-sm">⏸️ रोकें</button>
+                                <button onClick={pauseAudio} className="flex-1 p-4 bg-yellow-100 text-yellow-800 font-bold rounded-2xl cursor-pointer text-sm">⏸️ रोकें (Pause)</button>
                               )}
                               <button onClick={() => { stopAudio(); speakDescription(getInsuranceExplanation(selectedProduct)); }} className="flex-1 p-4 bg-gray-200 text-gray-800 font-bold rounded-2xl cursor-pointer text-sm">🔁 दोबारा</button>
-                              <button onClick={stopAudio} className="flex-1 p-4 bg-red-100 text-red-800 font-bold rounded-2xl cursor-pointer text-sm">⏹️ बंद</button>
+                              <button onClick={stopAudio} className="flex-1 p-4 bg-red-100 text-red-800 font-bold rounded-2xl cursor-pointer text-sm">⏹️ बंद (Stop)</button>
                             </div>
                           )}
                         </div>
@@ -577,12 +577,12 @@ export default function FarmerApp() {
                     <>
                       <div className="mb-6">
                         <h2 className="text-2xl font-bold text-gray-900">पहले समझें (Understand First)</h2>
-                        <p className="text-gray-500">बीमा सक्रिय करने से पहले एक सवाल का जवाब दें।</p>
+                        <p className="text-gray-500">बीमा सक्रिय करने से पहले एक सवाल का जवाब दें। (Answer a question before activating.)</p>
                       </div>
 
                       <div className="bg-white rounded-3xl p-6 shadow-md border border-gray-100">
                         <p className="text-xl font-bold text-gray-800 mb-8 text-center leading-relaxed">
-                          "अगर बारिश {selectedProduct.trigger.threshold} mm से {selectedProduct.trigger.operator === '>' ? 'ज्यादा' : 'कम'} हुई तो आपको कितना भुगतान मिलेगा?"
+                          "अगर बारिश (If rainfall) {selectedProduct.trigger.threshold} mm से {selectedProduct.trigger.operator === '>' ? 'ज्यादा' : 'कम'} हुई तो आपको कितना भुगतान मिलेगा?"
                         </p>
 
                         {compAnswerStatus === 'IDLE' || compAnswerStatus === 'WRONG' ? (
@@ -599,24 +599,24 @@ export default function FarmerApp() {
                             </div>
                             
                             <button onClick={() => startVoiceAnswer(selectedProduct.payout)} className={`w-full p-5 rounded-2xl text-xl font-bold cursor-pointer transition-all ${isListeningForAnswer ? 'bg-red-100 text-red-600 border-2 border-red-200 animate-pulse' : 'bg-blue-50 text-blue-800 border-2 border-blue-200'}`}>
-                              🎤 {isListeningForAnswer ? 'सुन रहा है...' : 'बोलकर जवाब दें'}
+                              🎤 {isListeningForAnswer ? 'सुन रहा है... (Listening...)' : 'बोलकर जवाब दें (Answer by speaking)'}
                             </button>
                           </div>
                         ) : null}
 
                         {compAnswerStatus === 'WRONG' && (
                           <div className="mt-6 p-4 bg-red-50 border border-red-100 rounded-2xl text-center">
-                            <div className="text-xl font-bold text-red-700 mb-2">❌ सही नहीं है</div>
-                            <p className="text-red-600 mb-4">कृपया फिर से प्रयास करें।</p>
-                            <button onClick={() => setInsuranceView('DETAILS')} className="px-6 py-3 bg-gray-800 text-white font-bold rounded-xl cursor-pointer">🔊 फिर से सुनें</button>
+                            <div className="text-xl font-bold text-red-700 mb-2">❌ सही नहीं है (Incorrect)</div>
+                            <p className="text-red-600 mb-4">कृपया फिर से प्रयास करें। (Please try again.)</p>
+                            <button onClick={() => setInsuranceView('DETAILS')} className="px-6 py-3 bg-gray-800 text-white font-bold rounded-xl cursor-pointer">🔊 फिर से सुनें (Listen again)</button>
                           </div>
                         )}
 
                         {compAnswerStatus === 'CORRECT' && (
                           <div className="mt-6 p-6 bg-green-50 border border-green-100 rounded-2xl text-center">
-                            <div className="text-2xl font-bold text-green-700 mb-4">✅ सही उत्तर</div>
-                            <p className="text-green-800 font-medium mb-6">आपने बीमा की शर्तें समझ ली हैं।</p>
-                            <button onClick={() => setInsuranceView('BINDING_REVIEW')} className="w-full p-5 bg-green-600 text-white font-bold text-xl rounded-2xl cursor-pointer shadow-md">[आगे बढ़ें]</button>
+                            <div className="text-2xl font-bold text-green-700 mb-4">✅ सही उत्तर (Correct Answer)</div>
+                            <p className="text-green-800 font-medium mb-6">आपने बीमा की शर्तें समझ ली हैं। (You have understood the terms.)</p>
+                            <button onClick={() => setInsuranceView('BINDING_REVIEW')} className="w-full p-5 bg-green-600 text-white font-bold text-xl rounded-2xl cursor-pointer shadow-md">[आगे बढ़ें] (Proceed)</button>
                           </div>
                         )}
                       </div>
@@ -625,15 +625,15 @@ export default function FarmerApp() {
 
                   {insuranceView === 'BINDING_REVIEW' && selectedProduct && (
                     <div className="bg-white rounded-3xl p-6 shadow-md border border-gray-100 text-center">
-                       <h2 className="text-2xl font-bold text-gray-900 mb-6">पुष्टि करें</h2>
+                       <h2 className="text-2xl font-bold text-gray-900 mb-6">पुष्टि करें (Confirm)</h2>
                        
                        <div className="space-y-4 text-lg mb-8">
                           <div className="flex flex-col p-4 bg-gray-50 rounded-2xl">
-                             <span className="text-gray-500 mb-1">प्रीमियम</span>
+                             <span className="text-gray-500 mb-1">प्रीमियम (Premium)</span>
                              <span className="font-bold text-2xl text-orange-600">₹{selectedProduct.premium}</span>
                           </div>
                           <div className="flex flex-col p-4 bg-gray-50 rounded-2xl">
-                             <span className="text-gray-500 mb-1">संभावित भुगतान</span>
+                             <span className="text-gray-500 mb-1">संभावित भुगतान (Payout)</span>
                              <span className="font-bold text-2xl text-green-600">₹{selectedProduct.payout.toLocaleString()}</span>
                           </div>
                        </div>
@@ -643,7 +643,7 @@ export default function FarmerApp() {
                          disabled={isBinding}
                          className="w-full p-5 bg-blue-600 text-white font-bold text-xl rounded-2xl cursor-pointer shadow-md disabled:opacity-50"
                        >
-                         {isBinding ? 'प्रतीक्षा करें...' : '[बीमा सक्रिय करें]'}
+                         {isBinding ? 'प्रतीक्षा करें... (Please wait...)' : '[बीमा सक्रिय करें] (Activate Insurance)'}
                        </button>
                     </div>
                   )}
@@ -653,15 +653,15 @@ export default function FarmerApp() {
                       <div className="bg-white rounded-3xl p-6 shadow-md border border-green-200 bg-green-50/30">
                         <div className="text-center mb-6">
                           <div className="text-5xl mb-4">✅</div>
-                          <h2 className="text-xl font-bold text-green-800">आपका बीमा सक्रिय हो गया।</h2>
+                          <h2 className="text-xl font-bold text-green-800">आपका बीमा सक्रिय हो गया। (Your insurance is activated.)</h2>
                         </div>
                         
                         <div className="space-y-3 mb-6">
                           <div className="font-bold text-lg border-b border-gray-200 pb-2">{publishedProducts.find(p => p.id === justPurchasedPolicy.productId)?.name || justPurchasedPolicy.productId}</div>
-                          <div className="flex justify-between items-center"><span className="text-gray-600">फ़सल</span><span className="font-bold">🌾 {justPurchasedPolicy.crop}</span></div>
-                          <div className="flex justify-between items-center"><span className="text-gray-600">प्रीमियम</span><span className="font-bold text-orange-600">₹{justPurchasedPolicy.premium}</span></div>
-                          <div className="flex justify-between items-center"><span className="text-gray-600">भुगतान</span><span className="font-bold text-green-600">₹{justPurchasedPolicy.payoutAmount.toLocaleString()}</span></div>
-                          <div className="flex justify-between items-center"><span className="text-gray-600">अवधि</span><span className="font-bold">30 दिन</span></div>
+                          <div className="flex justify-between items-center"><span className="text-gray-600">फ़सल (Crop)</span><span className="font-bold">🌾 {justPurchasedPolicy.crop}</span></div>
+                          <div className="flex justify-between items-center"><span className="text-gray-600">प्रीमियम (Premium)</span><span className="font-bold text-orange-600">₹{justPurchasedPolicy.premium}</span></div>
+                          <div className="flex justify-between items-center"><span className="text-gray-600">भुगतान (Payout)</span><span className="font-bold text-green-600">₹{justPurchasedPolicy.payoutAmount.toLocaleString()}</span></div>
+                          <div className="flex justify-between items-center"><span className="text-gray-600">अवधि (Duration)</span><span className="font-bold">30 दिन (Days)</span></div>
                         </div>
                         
                         <div className="text-center font-mono text-gray-800 font-bold p-3 bg-white border border-gray-200 rounded-xl shadow-sm">
@@ -669,7 +669,7 @@ export default function FarmerApp() {
                         </div>
                         
                         <button onClick={() => { setTab('HOME'); setInsuranceView('LIST'); }} className="w-full mt-6 p-4 bg-gray-900 text-white font-bold rounded-2xl cursor-pointer">
-                          होम पर जाएं
+                          होम पर जाएं (Go to Home)
                         </button>
                       </div>
                     </div>
@@ -699,7 +699,7 @@ export default function FarmerApp() {
                       <h2 className="text-xl font-bold text-gray-800">मेरा वॉलेट (My Wallet)</h2>
                     </div>
                     <div className="text-5xl font-extrabold text-gray-900 my-6">₹{balance.toLocaleString()}</div>
-                    <div className="text-gray-500 font-medium">उपलब्ध राशि</div>
+                    <div className="text-gray-500 font-medium">उपलब्ध राशि (Available Balance)</div>
                     
                     {!effectiveOnline && (
                       <div className="mt-4 text-orange-500 font-bold flex items-center justify-center gap-2">
@@ -710,7 +710,7 @@ export default function FarmerApp() {
 
                   {!qrPayload ? (
                   <div className="bg-white rounded-3xl p-6 shadow-md border border-gray-100">
-                    <h3 className="font-bold text-gray-800 mb-4 text-lg">पैसे खर्च करें</h3>
+                    <h3 className="font-bold text-gray-800 mb-4 text-lg">पैसे खर्च करें (Spend Money)</h3>
                     <div className="flex gap-4">
                        <input 
                          type="number" 
@@ -724,26 +724,26 @@ export default function FarmerApp() {
                          disabled={!spendAmount || parseInt(spendAmount) > balance || parseInt(spendAmount) <= 0}
                          className="px-6 py-2 bg-blue-600 text-white font-bold rounded-2xl shadow-md disabled:opacity-50"
                        >
-                         [भुगतान QR बनाएं]
+                         [भुगतान QR बनाएं] (Generate Payment QR)
                        </button>
                     </div>
                   </div>
                   ) : (
                   <div className="bg-white rounded-3xl p-6 shadow-md border border-gray-100 text-center">
-                    <h2 className="text-2xl font-bold text-gray-900 mb-6">भुगतान QR</h2>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-6">भुगतान QR (Payment QR)</h2>
                     
                     <div className="bg-white p-4 inline-block border-4 border-gray-200 rounded-2xl mb-6">
                       <QRCodeSVG value={qrPayload.payload} size={200} />
                     </div>
                     
                     <div className="text-4xl font-extrabold text-gray-900 mb-2">₹{qrPayload.amount.toLocaleString()}</div>
-                    <div className="text-gray-500 font-medium mb-6">शेष राशि: ₹{balance.toLocaleString()}</div>
+                    <div className="text-gray-500 font-medium mb-6">शेष राशि (Remaining Balance): ₹{balance.toLocaleString()}</div>
                     <div className="font-mono text-xs text-gray-400 mb-4">{qrPayload.id}</div>
                     
                     <div className="p-3 bg-orange-50 text-orange-700 font-bold rounded-xl mb-6 border border-orange-200">
-                       📡 ऑफ़लाइन
+                       📡 ऑफ़लाइन (Offline)
                     </div>
-                    <p className="text-sm text-gray-500 mb-6">यह QR केवल इस भुगतान के लिए है।</p>
+                    <p className="text-sm text-gray-500 mb-6">यह QR केवल इस भुगतान के लिए है। (This QR is only for this payment.)</p>
                     
                     <button onClick={() => setQrPayload(null)} className="w-full p-4 bg-gray-900 text-white font-bold rounded-2xl cursor-pointer">
                       हो गया (Done)
@@ -758,7 +758,7 @@ export default function FarmerApp() {
                   {transactions.length > 0 && (
                     <div className="bg-white rounded-3xl p-6 shadow-md border border-gray-100">
                       <div className="flex justify-between items-center mb-4">
-                        <h3 className="font-bold text-gray-800 text-lg">हाल के लेन-देन</h3>
+                        <h3 className="font-bold text-gray-800 text-lg">हाल के लेन-देन (Recent Transactions)</h3>
                         {isSyncing && <span className="text-blue-500 text-sm font-bold animate-pulse">Syncing...</span>}
                       </div>
                       <div className="space-y-3">
@@ -798,18 +798,18 @@ export default function FarmerApp() {
               {tab !== 'HOME' && tab !== 'PROFILE' && tab !== 'INSURANCE' && tab !== 'WALLET' && (
                 <div className="flex flex-col items-center justify-center h-64 text-gray-400">
                   <span className="text-4xl mb-4">🚧</span>
-                  <p>यह सुविधा जल्द आ रही है</p>
+                  <p>यह सुविधा जल्द आ रही है (This feature is coming soon)</p>
                 </div>
               )}
             </div>
           </div>
 
           <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-6 py-4 flex justify-between items-center shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)] max-w-md mx-auto">
-            <button onClick={() => { setTab('HOME'); stopAudio(); }} className={`flex flex-col items-center gap-1 ${tab === 'HOME' ? 'text-green-600' : 'text-gray-400'}`}><span className="text-2xl">🏠</span><span className="text-xs font-bold">होम</span></button>
-            <button onClick={() => { setTab('INSURANCE'); stopAudio(); setInsuranceView('LIST'); }} className={`flex flex-col items-center gap-1 ${tab === 'INSURANCE' ? 'text-green-600' : 'text-gray-400'}`}><span className="text-2xl">🛡️</span><span className="text-xs font-bold">बीमा</span></button>
-            <button onClick={() => { setTab('WALLET'); stopAudio(); }} className={`flex flex-col items-center gap-1 ${tab === 'WALLET' ? 'text-green-600' : 'text-gray-400'}`}><span className="text-2xl">💰</span><span className="text-xs font-bold">वॉलेट</span></button>
-            <button onClick={() => { setTab('VOICE'); stopAudio(); }} className={`flex flex-col items-center gap-1 ${tab === 'VOICE' ? 'text-green-600' : 'text-gray-400'}`}><span className="text-2xl">🔊</span><span className="text-xs font-bold">आवाज़</span></button>
-            <button onClick={() => { setTab('PROFILE'); stopAudio(); }} className={`flex flex-col items-center gap-1 ${tab === 'PROFILE' ? 'text-green-600' : 'text-gray-400'}`}><span className="text-2xl">👤</span><span className="text-xs font-bold">प्रोफ़ाइल</span></button>
+            <button onClick={() => { setTab('HOME'); stopAudio(); }} className={`flex flex-col items-center gap-1 ${tab === 'HOME' ? 'text-green-600' : 'text-gray-400'}`}><span className="text-2xl">🏠</span><span className="text-xs font-bold">होम (Home)</span></button>
+            <button onClick={() => { setTab('INSURANCE'); stopAudio(); setInsuranceView('LIST'); }} className={`flex flex-col items-center gap-1 ${tab === 'INSURANCE' ? 'text-green-600' : 'text-gray-400'}`}><span className="text-2xl">🛡️</span><span className="text-xs font-bold">बीमा (Insurance)</span></button>
+            <button onClick={() => { setTab('WALLET'); stopAudio(); }} className={`flex flex-col items-center gap-1 ${tab === 'WALLET' ? 'text-green-600' : 'text-gray-400'}`}><span className="text-2xl">💰</span><span className="text-xs font-bold">वॉलेट (Wallet)</span></button>
+            <button onClick={() => { setTab('VOICE'); stopAudio(); }} className={`flex flex-col items-center gap-1 ${tab === 'VOICE' ? 'text-green-600' : 'text-gray-400'}`}><span className="text-2xl">🔊</span><span className="text-xs font-bold">आवाज़ (Voice)</span></button>
+            <button onClick={() => { setTab('PROFILE'); stopAudio(); }} className={`flex flex-col items-center gap-1 ${tab === 'PROFILE' ? 'text-green-600' : 'text-gray-400'}`}><span className="text-2xl">👤</span><span className="text-xs font-bold">प्रोफ़ाइल (Profile)</span></button>
           </div>
         </>
       )}

@@ -148,7 +148,7 @@ export default function MerchantApp() {
   return (
     <div className="max-w-md mx-auto min-h-screen bg-gray-50 flex flex-col font-sans relative">
       <div className="p-6 bg-white shadow-sm border-b border-gray-200">
-        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">🏪 Seed Seller</h1>
+        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">🏪 बीज विक्रेता (Seed Seller)</h1>
         <div className="text-sm font-medium mt-1 flex justify-between">
            <span className={online ? 'text-green-600' : 'text-orange-600'}>
              {online ? '🟢 Online' : '📡 Offline Mode'}
@@ -203,7 +203,7 @@ export default function MerchantApp() {
             
             <div className="flex gap-3">
               <button onClick={() => setScanResult(null)} className="flex-1 p-4 bg-gray-200 text-gray-800 font-bold rounded-2xl">Cancel</button>
-              <button onClick={acceptPayment} disabled={isAccepting} className="flex-2 p-4 bg-green-600 text-white font-bold rounded-2xl">[भुगतान स्वीकार करें]</button>
+              <button onClick={acceptPayment} disabled={isAccepting} className="flex-2 p-4 bg-green-600 text-white font-bold rounded-2xl">[भुगतान स्वीकार करें] (Accept Payment)</button>
             </div>
           </div>
         )}
@@ -211,13 +211,13 @@ export default function MerchantApp() {
         {accepted && (
           <div className="bg-white rounded-3xl p-6 shadow-md border border-gray-100 text-center">
             <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center text-4xl mx-auto mb-4">✅</div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">✅ भुगतान दर्ज हो गया</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">✅ भुगतान दर्ज हो गया (Payment Recorded)</h2>
             <div className="text-4xl font-extrabold text-green-600 my-4">₹{(scanResult.amountPaise / 100).toLocaleString()}</div>
             <div className="font-mono text-gray-500 text-sm mb-6">{scanResult.transactionId}</div>
             
             <div className="p-4 bg-orange-50 text-orange-700 font-bold rounded-2xl mb-6 border border-orange-200 flex flex-col gap-1">
-              <span>📡 ऑफ़लाइन</span>
-              <span className="text-sm">⏳ Sync बाकी</span>
+              <span>📡 ऑफ़लाइन (Offline)</span>
+              <span className="text-sm">⏳ Sync बाकी (Sync Pending)</span>
             </div>
             
             <button onClick={() => { setScanResult(null); setAccepted(false); }} className="w-full p-4 bg-gray-900 text-white font-bold rounded-2xl">Scan Another</button>

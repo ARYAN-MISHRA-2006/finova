@@ -1,4 +1,6 @@
-'use client';
+const fs = require('fs');
+
+const code = `'use client';
 
 import { useState, useEffect } from 'react';
 import { setLocalState, getLocalState } from '@/lib/idb';
@@ -121,10 +123,10 @@ export default function FarmerApp() {
   }, []);
 
   const loadPolicyForUser = async (uid: string) => {
-    const policy = await getLocalState(`policy_${uid}`);
+    const policy = await getLocalState(\`policy_\${uid}\`);
     if (policy) {
       setActivePolicy(policy);
-      const evalRec = await getLocalState(`eval_${policy.policyId}`);
+      const evalRec = await getLocalState(\`eval_\${policy.policyId}\`);
       if (evalRec) setEvaluationRecord(evalRec);
     } else {
       setActivePolicy(null);
@@ -249,7 +251,7 @@ export default function FarmerApp() {
     setIsBinding(true);
 
     try {
-      const existing = await getLocalState(`policy_${userId}`);
+      const existing = await getLocalState(\`policy_\${userId}\`);
       if (existing) {
         setActivePolicy(existing);
         setInsuranceView('ACTIVE_POLICY');
@@ -257,7 +259,7 @@ export default function FarmerApp() {
       }
 
       const newPolicy = bindPolicy(selectedProduct, userId);
-      await setLocalState(`policy_${userId}`, newPolicy);
+      await setLocalState(\`policy_\${userId}\`, newPolicy);
       setActivePolicy(newPolicy);
       setInsuranceView('ACTIVE_POLICY');
     } finally {
@@ -287,7 +289,7 @@ export default function FarmerApp() {
     
     const record = evaluatePolicy(activePolicy, readings, selectedProduct.oracleConfig);
     setEvaluationRecord(record);
-    await setLocalState(`eval_${activePolicy.policyId}`, record);
+    await setLocalState(\`eval_\${activePolicy.policyId}\`, record);
   };
 
   return (
@@ -319,7 +321,7 @@ export default function FarmerApp() {
               <button 
                 key={icon} 
                 onClick={() => handleImageTap(icon)}
-                className={`aspect-square border-2 rounded-2xl shadow-sm text-4xl flex items-center justify-center cursor-pointer active:scale-95 transition-transform ${sequence.includes(icon) ? 'ring-4 ring-blue-500 bg-blue-50 border-blue-500' : 'bg-white border-gray-100 hover:bg-gray-50'}`}
+                className={\`aspect-square border-2 rounded-2xl shadow-sm text-4xl flex items-center justify-center cursor-pointer active:scale-95 transition-transform \${sequence.includes(icon) ? 'ring-4 ring-blue-500 bg-blue-50 border-blue-500' : 'bg-white border-gray-100 hover:bg-gray-50'}\`}
               >
                 {icon}
               </button>
@@ -502,7 +504,7 @@ export default function FarmerApp() {
                               <div className="flex-grow border-t border-gray-200"></div><span className="flex-shrink-0 mx-4 text-gray-400 font-bold">या (OR)</span><div className="flex-grow border-t border-gray-200"></div>
                             </div>
                             
-                            <button onClick={startVoiceAnswer} className={`w-full p-5 rounded-2xl text-xl font-bold cursor-pointer transition-all ${isListeningForAnswer ? 'bg-red-100 text-red-600 border-2 border-red-200 animate-pulse' : 'bg-blue-50 text-blue-800 border-2 border-blue-200'}`}>🎤 {isListeningForAnswer ? 'सुन रहा है... (Listening...)' : 'बोलकर जवाब दें (Answer by Voice)'}</button>
+                            <button onClick={startVoiceAnswer} className={\`w-full p-5 rounded-2xl text-xl font-bold cursor-pointer transition-all \${isListeningForAnswer ? 'bg-red-100 text-red-600 border-2 border-red-200 animate-pulse' : 'bg-blue-50 text-blue-800 border-2 border-blue-200'}\`}>🎤 {isListeningForAnswer ? 'सुन रहा है... (Listening...)' : 'बोलकर जवाब दें (Answer by Voice)'}</button>
                           </div>
                         ) : null}
 
@@ -575,12 +577,12 @@ export default function FarmerApp() {
                       <div className="bg-white rounded-3xl p-6 shadow-md border border-gray-100">
                          <h3 className="text-lg font-bold text-gray-900 mb-4">Oracle Testing (Simulate Evaluation)</h3>
                          <div className="grid grid-cols-2 gap-2 mb-4">
-                            <button onClick={() => setOracleMode('NORMAL')} className={`p-2 text-sm font-bold rounded-lg border ${oracleMode === 'NORMAL' ? 'bg-blue-100 border-blue-300 text-blue-800' : 'bg-gray-50'}`}>Normal Trigger</button>
-                            <button onClick={() => setOracleMode('NO_TRIGGER')} className={`p-2 text-sm font-bold rounded-lg border ${oracleMode === 'NO_TRIGGER' ? 'bg-blue-100 border-blue-300 text-blue-800' : 'bg-gray-50'}`}>No Trigger</button>
-                            <button onClick={() => setOracleMode('OUTLIER')} className={`p-2 text-sm font-bold rounded-lg border ${oracleMode === 'OUTLIER' ? 'bg-blue-100 border-blue-300 text-blue-800' : 'bg-gray-50'}`}>Outlier C=4</button>
-                            <button onClick={() => setOracleMode('STALE')} className={`p-2 text-sm font-bold rounded-lg border ${oracleMode === 'STALE' ? 'bg-blue-100 border-blue-300 text-blue-800' : 'bg-gray-50'}`}>Stale C</button>
-                            <button onClick={() => setOracleMode('NONRESPONSIVE')} className={`p-2 text-sm font-bold rounded-lg border ${oracleMode === 'NONRESPONSIVE' ? 'bg-blue-100 border-blue-300 text-blue-800' : 'bg-gray-50'}`}>Timeout C</button>
-                            <button onClick={() => setOracleMode('DISAGREEMENT')} className={`p-2 text-sm font-bold rounded-lg border ${oracleMode === 'DISAGREEMENT' ? 'bg-blue-100 border-blue-300 text-blue-800' : 'bg-gray-50'}`}>Disagreement</button>
+                            <button onClick={() => setOracleMode('NORMAL')} className={\`p-2 text-sm font-bold rounded-lg border \${oracleMode === 'NORMAL' ? 'bg-blue-100 border-blue-300 text-blue-800' : 'bg-gray-50'}\`}>Normal Trigger</button>
+                            <button onClick={() => setOracleMode('NO_TRIGGER')} className={\`p-2 text-sm font-bold rounded-lg border \${oracleMode === 'NO_TRIGGER' ? 'bg-blue-100 border-blue-300 text-blue-800' : 'bg-gray-50'}\`}>No Trigger</button>
+                            <button onClick={() => setOracleMode('OUTLIER')} className={\`p-2 text-sm font-bold rounded-lg border \${oracleMode === 'OUTLIER' ? 'bg-blue-100 border-blue-300 text-blue-800' : 'bg-gray-50'}\`}>Outlier C=4</button>
+                            <button onClick={() => setOracleMode('STALE')} className={\`p-2 text-sm font-bold rounded-lg border \${oracleMode === 'STALE' ? 'bg-blue-100 border-blue-300 text-blue-800' : 'bg-gray-50'}\`}>Stale C</button>
+                            <button onClick={() => setOracleMode('NONRESPONSIVE')} className={\`p-2 text-sm font-bold rounded-lg border \${oracleMode === 'NONRESPONSIVE' ? 'bg-blue-100 border-blue-300 text-blue-800' : 'bg-gray-50'}\`}>Timeout C</button>
+                            <button onClick={() => setOracleMode('DISAGREEMENT')} className={\`p-2 text-sm font-bold rounded-lg border \${oracleMode === 'DISAGREEMENT' ? 'bg-blue-100 border-blue-300 text-blue-800' : 'bg-gray-50'}\`}>Disagreement</button>
                          </div>
                          <button onClick={handleSimulateOracle} className="w-full p-4 bg-purple-600 text-white font-bold rounded-xl shadow-md cursor-pointer">
                             Run Policy Engine ⚙️
@@ -632,14 +634,17 @@ export default function FarmerApp() {
           </div>
 
           <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-6 py-4 flex justify-between items-center shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)] max-w-md mx-auto">
-            <button onClick={() => { setTab('HOME'); stopAudio(); }} className={`flex flex-col items-center gap-1 ${tab === 'HOME' ? 'text-green-600' : 'text-gray-400'}`}><span className="text-2xl">🏠</span><span className="text-xs font-bold">होम</span></button>
-            <button onClick={() => { setTab('INSURANCE'); stopAudio(); if(activePolicy) setInsuranceView('ACTIVE_POLICY'); else if(insuranceView as any === 'BINDING_PLACEHOLDER') setInsuranceView('LIST'); }} className={`flex flex-col items-center gap-1 ${tab === 'INSURANCE' ? 'text-green-600' : 'text-gray-400'}`}><span className="text-2xl">🛡️</span><span className="text-xs font-bold">बीमा</span></button>
-            <button onClick={() => { setTab('WALLET'); stopAudio(); }} className={`flex flex-col items-center gap-1 ${tab === 'WALLET' ? 'text-green-600' : 'text-gray-400'}`}><span className="text-2xl">💰</span><span className="text-xs font-bold">वॉलेट</span></button>
-            <button onClick={() => { setTab('VOICE'); stopAudio(); }} className={`flex flex-col items-center gap-1 ${tab === 'VOICE' ? 'text-green-600' : 'text-gray-400'}`}><span className="text-2xl">🔊</span><span className="text-xs font-bold">आवाज़</span></button>
-            <button onClick={() => { setTab('PROFILE'); stopAudio(); }} className={`flex flex-col items-center gap-1 ${tab === 'PROFILE' ? 'text-green-600' : 'text-gray-400'}`}><span className="text-2xl">👤</span><span className="text-xs font-bold">प्रोफ़ाइल</span></button>
+            <button onClick={() => { setTab('HOME'); stopAudio(); }} className={\`flex flex-col items-center gap-1 \${tab === 'HOME' ? 'text-green-600' : 'text-gray-400'}\`}><span className="text-2xl">🏠</span><span className="text-xs font-bold">होम</span></button>
+            <button onClick={() => { setTab('INSURANCE'); stopAudio(); if(activePolicy) setInsuranceView('ACTIVE_POLICY'); else if(insuranceView === 'BINDING_PLACEHOLDER') setInsuranceView('LIST'); }} className={\`flex flex-col items-center gap-1 \${tab === 'INSURANCE' ? 'text-green-600' : 'text-gray-400'}\`}><span className="text-2xl">🛡️</span><span className="text-xs font-bold">बीमा</span></button>
+            <button onClick={() => { setTab('WALLET'); stopAudio(); }} className={\`flex flex-col items-center gap-1 \${tab === 'WALLET' ? 'text-green-600' : 'text-gray-400'}\`}><span className="text-2xl">💰</span><span className="text-xs font-bold">वॉलेट</span></button>
+            <button onClick={() => { setTab('VOICE'); stopAudio(); }} className={\`flex flex-col items-center gap-1 \${tab === 'VOICE' ? 'text-green-600' : 'text-gray-400'}\`}><span className="text-2xl">🔊</span><span className="text-xs font-bold">आवाज़</span></button>
+            <button onClick={() => { setTab('PROFILE'); stopAudio(); }} className={\`flex flex-col items-center gap-1 \${tab === 'PROFILE' ? 'text-green-600' : 'text-gray-400'}\`}><span className="text-2xl">👤</span><span className="text-xs font-bold">प्रोफ़ाइल</span></button>
           </div>
         </>
       )}
     </div>
   );
 }
+`;
+
+fs.writeFileSync('src/app/farmer/page.tsx', code);

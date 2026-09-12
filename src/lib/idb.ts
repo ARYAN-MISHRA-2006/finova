@@ -137,3 +137,15 @@ export async function saveProduct(product: ProductConfig) {
   }
   await setLocalState('product_registry', existing);
 }
+
+import { EvaluationRecord } from '../domain/policy';
+
+export async function saveEvaluation(record: EvaluationRecord) {
+  const existing = await getLocalState('evaluations_registry') || [];
+  existing.push(record);
+  await setLocalState('evaluations_registry', existing);
+}
+
+export async function getEvaluations(): Promise<EvaluationRecord[]> {
+  return await getLocalState('evaluations_registry') || [];
+}

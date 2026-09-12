@@ -1,0 +1,16 @@
+{
+  "name": "Finova Farmer",
+  "short_name": "Finova",
+  "description": "Offline-First Parametric Micro-Insurance",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "256x256",
+      "type": "image/x-icon"
+    }
+  ]
+}

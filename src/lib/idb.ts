@@ -66,3 +66,15 @@ export async function getPendingTransactions(userId: string) {
   const txs = await db.getAllFromIndex('transactions', 'by-user', userId);
   return txs.filter(t => t.status === 'PENDING').sort((a, b) => a.sequence - b.sequence);
 }
+
+export async function setLocalState(key: string, value: any) {
+  const db = await getDB();
+  if (!db) return;
+  await db.put('keyval', value, key);
+}
+
+export async function getLocalState(key: string) {
+  const db = await getDB();
+  if (!db) return null;
+  return await db.get('keyval', key);
+}

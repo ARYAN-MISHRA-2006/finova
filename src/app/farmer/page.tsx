@@ -3,6 +3,9 @@
 import { useState, useEffect } from 'react';
 import { setLocalState, getLocalState, getBalance, addTransaction, getPendingTransactions, updateTransactionStatus, WalletTransaction, getProducts } from '@/lib/idb';
 import { ProductConfig, Policy, bindPolicy, evaluatePolicy, EvaluationRecord } from '@/domain/policy';
+import { QRCodeSVG } from 'qrcode.react';
+import { getWalletState, setWalletState, processOfflineSpend } from '@/lib/idb';
+import { calculateBalanceHash, createOfflineTransactionPayload, verifyOfflineTransactionPayload } from '@/domain/protocol';
 import { validateReading, OracleReading } from '@/domain/oracle';
 
 
@@ -60,6 +63,7 @@ export default function FarmerApp() {
   const [balance, setBalance] = useState<number>(0);
   const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
   const [spendAmount, setSpendAmount] = useState('');
+  const [qrPayload, setQrPayload] = useState<{ payload: string, amount: number, id: string } | null>(null);
   const [simulatedOffline, setSimulatedOffline] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
 
@@ -80,24 +84,19 @@ export default function FarmerApp() {
         getProducts().then(setAvailableProducts);
         
         // Demo initial payout logic
-        getBalance(uid).then(async bal => {
-          if (bal === 0) {
+        getWalletState(uid).then(async ws => {
+          if (ws.balancePaise === 0) {
             const pending = await getPendingTransactions(uid);
             if (pending.length === 0) {
-               await addTransaction({
-                 id: `TX-${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
-                 userId: uid,
-                 amount: 10000,
-                 type: 'PAYOUT',
-                 timestamp: Date.now(),
-                 sequence: 0,
-                 prevHash: '0x0',
-                 newHash: '0x1',
-                 status: 'SYNCED'
+               await setWalletState({
+                 farmerId: uid,
+                 balancePaise: 1000000,
+                 sequenceNumber: 42,
+                 walletId: `WALLET-${uid.toUpperCase()}`
                });
-               loadWalletData(uid);
             }
           }
+          loadWalletData(uid);
         });
       } else if (uid) {
         setLocalState('session_userId', null);
@@ -124,11 +123,12 @@ export default function FarmerApp() {
   };
 
   const loadWalletData = async (uid: string) => {
-    const bal = await getBalance(uid);
-    setBalance(bal);
+    const ws = await getWalletState(uid);
+    setBalance(ws.balancePaise / 100);
     const pending = await getPendingTransactions(uid);
     setTransactions(pending);
   };
+
 
   const syncPendingTransactions = async (uid: string) => {
     if (isSyncing) return;
@@ -136,8 +136,21 @@ export default function FarmerApp() {
     try {
       const pending = await getPendingTransactions(uid);
       for (const tx of pending) {
-        await new Promise(r => setTimeout(r, 800));
-        await updateTransactionStatus(tx.id, 'SYNCED');
+        if (tx.payload) {
+          const payloadObj = await verifyOfflineTransactionPayload(tx.payload);
+          const res = await fetch('/api/sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payloadObj)
+          });
+          const data = await res.json();
+          if (data.status === 'ACCEPTED' || data.status === 'ALREADY_PROCESSED') {
+            await updateTransactionStatus(tx.id, 'SYNCED');
+          }
+        } else {
+          // Fallback for legacy demo transactions
+          await updateTransactionStatus(tx.id, 'SYNCED');
+        }
       }
       loadWalletData(uid);
     } catch (e) {
@@ -294,30 +307,43 @@ export default function FarmerApp() {
 
   const handleSpend = async () => {
     if (!userId) return;
-    const amount = parseInt(spendAmount);
-    if (isNaN(amount) || amount <= 0 || amount > balance) {
-       alert("Invalid amount or insufficient balance.");
-       return;
-    }
-
-    const tx: WalletTransaction = {
-      id: `TX-${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
-      userId: userId,
-      amount: -amount,
-      type: 'SPEND',
-      timestamp: Date.now(),
-      sequence: Date.now(),
-      prevHash: '0x...',
-      newHash: '0x...',
-      status: 'PENDING'
-    };
-
-    await addTransaction(tx);
-    setSpendAmount('');
-    await loadWalletData(userId);
+    const amountNum = parseInt(spendAmount);
+    if (isNaN(amountNum) || amountNum <= 0) return;
     
-    if (effectiveOnline) {
-      syncPendingTransactions(userId);
+    const amountPaise = amountNum * 100;
+    const ws = await getWalletState(userId);
+    
+    if (ws.balancePaise < amountPaise) {
+      alert('❌ पर्याप्त राशि उपलब्ध नहीं है।');
+      return;
+    }
+    
+    const newBalancePaise = ws.balancePaise - amountPaise;
+    const newSeq = ws.sequenceNumber + 1;
+    const txId = `TX-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+    
+    const hash = await calculateBalanceHash(ws.walletId, userId, newBalancePaise, newSeq, txId);
+    
+    const txData = {
+      transactionId: txId,
+      walletId: ws.walletId,
+      farmerId: userId,
+      deviceId: `DEVICE-${userId}-1`,
+      amountPaise,
+      newBalancePaise,
+      sequenceNumber: newSeq,
+      timestamp: new Date().toISOString(),
+      balanceHash: hash
+    };
+    
+    const payloadStr = await createOfflineTransactionPayload(txData);
+    
+    const success = await processOfflineSpend(userId, amountPaise, txId, hash, payloadStr);
+    
+    if (success) {
+      setSpendAmount('');
+      setQrPayload({ payload: payloadStr, amount: amountNum, id: txId });
+      loadWalletData(userId);
     }
   };
 
@@ -682,6 +708,7 @@ export default function FarmerApp() {
                     )}
                   </div>
 
+                  {!qrPayload ? (
                   <div className="bg-white rounded-3xl p-6 shadow-md border border-gray-100">
                     <h3 className="font-bold text-gray-800 mb-4 text-lg">पैसे खर्च करें</h3>
                     <div className="flex gap-4">
@@ -697,10 +724,36 @@ export default function FarmerApp() {
                          disabled={!spendAmount || parseInt(spendAmount) > balance || parseInt(spendAmount) <= 0}
                          className="px-6 py-2 bg-blue-600 text-white font-bold rounded-2xl shadow-md disabled:opacity-50"
                        >
-                         Spend
+                         [भुगतान QR बनाएं]
                        </button>
                     </div>
                   </div>
+                  ) : (
+                  <div className="bg-white rounded-3xl p-6 shadow-md border border-gray-100 text-center">
+                    <h2 className="text-2xl font-bold text-gray-900 mb-6">भुगतान QR</h2>
+                    
+                    <div className="bg-white p-4 inline-block border-4 border-gray-200 rounded-2xl mb-6">
+                      <QRCodeSVG value={qrPayload.payload} size={200} />
+                    </div>
+                    
+                    <div className="text-4xl font-extrabold text-gray-900 mb-2">₹{qrPayload.amount.toLocaleString()}</div>
+                    <div className="text-gray-500 font-medium mb-6">शेष राशि: ₹{balance.toLocaleString()}</div>
+                    <div className="font-mono text-xs text-gray-400 mb-4">{qrPayload.id}</div>
+                    
+                    <div className="p-3 bg-orange-50 text-orange-700 font-bold rounded-xl mb-6 border border-orange-200">
+                       📡 ऑफ़लाइन
+                    </div>
+                    <p className="text-sm text-gray-500 mb-6">यह QR केवल इस भुगतान के लिए है।</p>
+                    
+                    <button onClick={() => setQrPayload(null)} className="w-full p-4 bg-gray-900 text-white font-bold rounded-2xl cursor-pointer">
+                      हो गया (Done)
+                    </button>
+                    
+                    <div className="mt-4 p-2 bg-gray-50 rounded text-xs text-gray-400 break-all text-left">
+                       <strong>Payload Size:</strong> {new Blob([qrPayload.payload]).size} bytes
+                    </div>
+                  </div>
+                  )}
 
                   {transactions.length > 0 && (
                     <div className="bg-white rounded-3xl p-6 shadow-md border border-gray-100">

@@ -88,3 +88,33 @@ export async function decodeCriticalRecord(buffer: Uint8Array): Promise<Critical
     oracleValue
   };
 }
+
+export async function calculateBalanceHash(walletId: string, farmerId: string, newBalancePaise: number, sequenceNumber: number, transactionId: string): Promise<string> {
+  const enc = new TextEncoder();
+  const data = enc.encode(`${walletId}:${farmerId}:${newBalancePaise}:${sequenceNumber}:${transactionId}`);
+  const hashBuf = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+export async function createOfflineTransactionPayload(data: any): Promise<string> {
+   const payload = JSON.stringify(data);
+   const key = await getCryptoKey();
+   const enc = new TextEncoder();
+   const signatureBuf = await crypto.subtle.sign('HMAC', key, enc.encode(payload));
+   const sigHex = Array.from(new Uint8Array(signatureBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
+   return `INSUREX1.${btoa(payload)}.${sigHex}`;
+}
+
+export async function verifyOfflineTransactionPayload(payloadString: string): Promise<any> {
+   if (!payloadString.startsWith('INSUREX1.')) throw new Error('Invalid format');
+   const parts = payloadString.split('.');
+   if (parts.length !== 3) throw new Error('Invalid payload segments');
+   const [_, b64, sigHex] = parts;
+   const payload = atob(b64);
+   const enc = new TextEncoder();
+   const key = await getCryptoKey();
+   const expectedSigBuf = await crypto.subtle.sign('HMAC', key, enc.encode(payload));
+   const expectedSigHex = Array.from(new Uint8Array(expectedSigBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
+   if (sigHex !== expectedSigHex) throw new Error('Invalid Signature');
+   return JSON.parse(payload);
+}

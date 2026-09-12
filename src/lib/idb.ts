@@ -10,6 +10,7 @@ export interface WalletTransaction {
   prevHash: string;
   newHash: string;
   status: 'PENDING' | 'SYNCED' | 'REJECTED';
+  payload?: string;
 }
 
 interface FinovaDB extends DBSchema {
@@ -148,4 +149,67 @@ export async function saveEvaluation(record: EvaluationRecord) {
 
 export async function getEvaluations(): Promise<EvaluationRecord[]> {
   return await getLocalState('evaluations_registry') || [];
+}
+
+export interface WalletState {
+  farmerId: string;
+  balancePaise: number;
+  sequenceNumber: number;
+  walletId: string;
+}
+
+export async function getWalletState(userId: string): Promise<WalletState> {
+  const db = await getDB();
+  if (!db) return { farmerId: userId, balancePaise: 0, sequenceNumber: 0, walletId: `WALLET-${userId}` };
+  const state = await db.get('keyval', `walletState_${userId}`);
+  return state || { farmerId: userId, balancePaise: 0, sequenceNumber: 0, walletId: `WALLET-${userId}` };
+}
+
+export async function setWalletState(state: WalletState) {
+  const db = await getDB();
+  if (!db) return;
+  await db.put('keyval', state, `walletState_${state.farmerId}`);
+}
+
+export async function processOfflineSpend(
+  userId: string, 
+  amountPaise: number, 
+  transactionId: string, 
+  balanceHash: string,
+  payload: string
+): Promise<boolean> {
+  const db = await getDB();
+  if (!db) return false;
+  
+  const tx = db.transaction(['keyval', 'transactions'], 'readwrite');
+  const state = (await tx.objectStore('keyval').get(`walletState_${userId}`)) as WalletState || {
+    farmerId: userId, balancePaise: 0, sequenceNumber: 0, walletId: `WALLET-${userId}`
+  };
+
+  if (state.balancePaise < amountPaise) {
+    tx.abort();
+    return false;
+  }
+
+  state.balancePaise -= amountPaise;
+  state.sequenceNumber += 1;
+
+  const newTx: WalletTransaction = {
+    id: transactionId,
+    userId,
+    amount: -amountPaise,
+    type: 'SPEND',
+    timestamp: Date.now(),
+    sequence: state.sequenceNumber,
+    prevHash: '',
+    newHash: balanceHash,
+    status: 'PENDING',
+    payload
+  };
+
+  await tx.objectStore('keyval').put(state, `walletState_${userId}`);
+  await tx.objectStore('transactions').put(newTx);
+  await tx.done;
+
+  return true;
 }

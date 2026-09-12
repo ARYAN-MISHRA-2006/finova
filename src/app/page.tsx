@@ -21,6 +21,7 @@ export default function AppOpening() {
       <div className="w-full max-w-sm bg-white rounded-3xl p-6 shadow-2xl mb-8">
         <h2 className="text-2xl font-bold text-center mb-6">आप कौन हैं? (Who are you?)</h2>
         <div className="space-y-4">
+          
           <button 
             onClick={() => router.push('/farmer')}
             className="w-full p-5 bg-green-50 hover:bg-green-100 border-2 border-green-200 rounded-2xl flex items-center shadow-sm cursor-pointer transition-colors"
@@ -28,6 +29,15 @@ export default function AppOpening() {
             <span className="text-4xl mr-4">🌾</span>
             <span className="text-xl font-bold text-green-900">किसान (Farmer)</span>
           </button>
+          
+          <button 
+            onClick={() => router.push('/merchant')}
+            className="w-full p-5 bg-orange-50 hover:bg-orange-100 border-2 border-orange-200 rounded-2xl flex items-center shadow-sm cursor-pointer transition-colors"
+          >
+            <span className="text-4xl mr-4">🏪</span>
+            <span className="text-xl font-bold text-orange-900">बीज विक्रेता (Seed Seller)</span>
+          </button>
+
           
           <button 
             onClick={() => router.push('/insurer')}

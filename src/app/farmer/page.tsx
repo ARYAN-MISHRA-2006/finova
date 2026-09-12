@@ -5,6 +5,26 @@ import { setLocalState, getLocalState, getBalance, addTransaction, getPendingTra
 import { ProductConfig, Policy, bindPolicy, evaluatePolicy, EvaluationRecord } from '@/domain/policy';
 import { validateReading, OracleReading } from '@/domain/oracle';
 
+
+function getInsuranceExplanation(product: ProductConfig): string {
+    const threshold = product.trigger?.threshold;
+    const operator = product.trigger?.operator;
+    const payout = product.payout;
+
+    const condition =
+        operator === ">"
+            ? "से अधिक"
+            : operator === "<"
+                ? "से कम"
+                : operator === ">="
+                    ? "या उससे अधिक"
+                    : operator === "<="
+                        ? "या उससे कम"
+                        : "के बराबर";
+
+    return `अगर बीमा अवधि के दौरान बारिश ${threshold} mm ${condition} रहती है, तो आपको ₹${payout.toLocaleString("en-IN")} का भुगतान मिलेगा।`;
+}
+
 const ICONS = ['🌾', '🏠', '💧', '🐄', '☀️'];
 const PASSWORDS: Record<string, string[]> = {
   Ramu: ['🌾', '💧', '🏠'],
@@ -501,12 +521,12 @@ export default function FarmerApp() {
                           <div className="flex justify-between border-t border-gray-100 pt-4"><span className="text-gray-500">💵 भुगतान</span><span className="font-bold text-green-600 text-xl">₹{selectedProduct.payout.toLocaleString()}</span></div>
                         </div>
 
-                        <div className="mt-8 bg-blue-50 p-4 rounded-2xl border border-blue-100 text-blue-900 leading-relaxed font-medium">{(selectedProduct as any).description}</div>
+                        <div className="mt-8 bg-blue-50 p-4 rounded-2xl border border-blue-100 text-blue-900 leading-relaxed font-medium">{getInsuranceExplanation(selectedProduct)}</div>
 
                         <div className="mt-6 border-t border-gray-100 pt-6">
                           <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">🔊 इस बीमा के बारे में सुनें</h3>
                           {!isPlayingAudio ? (
-                            <button onClick={() => speakDescription((selectedProduct as any).voiceText)} className="w-full p-4 bg-gray-100 text-gray-800 font-bold rounded-2xl flex items-center justify-center gap-2 cursor-pointer">🔊 सुनें (Listen)</button>
+                            <button onClick={() => speakDescription(getInsuranceExplanation(selectedProduct))} className="w-full p-4 bg-gray-100 text-gray-800 font-bold rounded-2xl flex items-center justify-center gap-2 cursor-pointer">🔊 सुनें (Listen)</button>
                           ) : (
                             <div className="flex gap-2">
                               {isAudioPaused ? (
@@ -514,7 +534,7 @@ export default function FarmerApp() {
                               ) : (
                                 <button onClick={pauseAudio} className="flex-1 p-4 bg-yellow-100 text-yellow-800 font-bold rounded-2xl cursor-pointer text-sm">⏸️ रोकें</button>
                               )}
-                              <button onClick={() => { stopAudio(); speakDescription((selectedProduct as any).voiceText); }} className="flex-1 p-4 bg-gray-200 text-gray-800 font-bold rounded-2xl cursor-pointer text-sm">🔁 दोबारा</button>
+                              <button onClick={() => { stopAudio(); speakDescription(getInsuranceExplanation(selectedProduct)); }} className="flex-1 p-4 bg-gray-200 text-gray-800 font-bold rounded-2xl cursor-pointer text-sm">🔁 दोबारा</button>
                               <button onClick={stopAudio} className="flex-1 p-4 bg-red-100 text-red-800 font-bold rounded-2xl cursor-pointer text-sm">⏹️ बंद</button>
                             </div>
                           )}

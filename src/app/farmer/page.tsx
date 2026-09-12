@@ -320,7 +320,7 @@ export default function FarmerApp() {
     
     const newBalancePaise = ws.balancePaise - amountPaise;
     const newSeq = ws.sequenceNumber + 1;
-    const txId = `TX-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+    const txId = `TX-${crypto.randomUUID().toUpperCase()}`;
     
     const hash = await calculateBalanceHash(ws.walletId, userId, newBalancePaise, newSeq, txId);
     
@@ -336,7 +336,7 @@ export default function FarmerApp() {
       balanceHash: hash
     };
     
-    const payloadStr = await createOfflineTransactionPayload(txData);
+    const payloadStr = await createOfflineTransactionPayload(txData, userId);
     
     const success = await processOfflineSpend(userId, amountPaise, txId, hash, payloadStr);
     

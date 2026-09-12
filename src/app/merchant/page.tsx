@@ -48,14 +48,27 @@ export default function MerchantApp() {
     setPendingTxs(merchantTxs);
   };
 
+  
+  const checkDuplicate = async (txId: string) => {
+    const db = await getDB();
+    if (!db) return false;
+    const existing = await db.get('keyval', `merchant_tx_${txId}`);
+    return !!existing;
+  };
+
   const onScanSuccess = async (decodedText: string) => {
     try {
       const payload = await verifyOfflineTransactionPayload(decodedText);
+      if (await checkDuplicate(payload.transactionId)) {
+         setScanError('ALREADY_SCANNED');
+         setScanResult(null);
+         return;
+      }
       setScanResult(payload);
       setScanError('');
       setAccepted(false);
     } catch (e: any) {
-      setScanError('❌ Invalid Signature or Format');
+      setScanError('INVALID QR: ' + e.message);
       setScanResult(null);
     }
   };
@@ -63,14 +76,18 @@ export default function MerchantApp() {
   const handleManualSubmit = async () => {
     try {
       const payload = await verifyOfflineTransactionPayload(manualPayload);
+      if (await checkDuplicate(payload.transactionId)) {
+         setScanError('ALREADY_SCANNED');
+         setScanResult(null);
+         return;
+      }
       setScanResult(payload);
       setScanError('');
       setAccepted(false);
     } catch (e: any) {
-      setScanError('❌ Invalid Signature or Format');
+      setScanError('INVALID QR: ' + e.message);
       setScanResult(null);
-    }
-  };
+    }  };
 
   const acceptPayment = async () => {
     if (!scanResult) return;

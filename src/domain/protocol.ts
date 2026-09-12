@@ -1,3 +1,4 @@
+import { getDB } from '../lib/idb';
 export interface CriticalRecordData {
   policyId: string;
   sequence: number;
@@ -96,25 +97,108 @@ export async function calculateBalanceHash(walletId: string, farmerId: string, n
   return Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-export async function createOfflineTransactionPayload(data: any): Promise<string> {
+
+
+
+export async function getDeviceKeyPair(userId: string): Promise<CryptoKeyPair> {
+  // We can't import getDB top-level easily if there's a circular dependency, but let's assume it's fine.
+  const db = await getDB();
+  if (!db) {
+    // For server side or if no DB, just generate a temporary one, 
+    // but this shouldn't be called without DB usually.
+    return await crypto.subtle.generateKey(
+      { name: "ECDSA", namedCurve: "P-256" },
+      true,
+      ["sign", "verify"]
+    );
+  }
+  
+  const keyName = `deviceKeyPair_${userId}`;
+  let keyPair = await db.get('keyval', keyName);
+  
+  if (!keyPair) {
+    keyPair = await crypto.subtle.generateKey(
+      { name: "ECDSA", namedCurve: "P-256" },
+      false, // non-extractable private key
+      ["sign", "verify"]
+    );
+    await db.put('keyval', keyPair, keyName);
+  }
+  
+  return keyPair;
+}
+
+export async function createOfflineTransactionPayload(data: any, userId: string): Promise<string> {
+   const keyPair = await getDeviceKeyPair(userId);
+   const publicKeyJwk = await crypto.subtle.exportKey('jwk', keyPair.publicKey);
+   
+   data.publicKey = publicKeyJwk;
    const payload = JSON.stringify(data);
-   const key = await getCryptoKey();
+   
    const enc = new TextEncoder();
-   const signatureBuf = await crypto.subtle.sign('HMAC', key, enc.encode(payload));
+   const signatureBuf = await crypto.subtle.sign(
+     { name: "ECDSA", hash: { name: "SHA-256" } },
+     keyPair.privateKey,
+     enc.encode(payload)
+   );
+   
    const sigHex = Array.from(new Uint8Array(signatureBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
-   return `INSUREX1.${btoa(payload)}.${sigHex}`;
+   
+   const fullPayload = {
+     version: 1,
+     type: "INSUREX_OFFLINE_TX",
+     ...data,
+     signature: sigHex
+   };
+   
+   return JSON.stringify(fullPayload);
 }
 
 export async function verifyOfflineTransactionPayload(payloadString: string): Promise<any> {
-   if (!payloadString.startsWith('INSUREX1.')) throw new Error('Invalid format');
-   const parts = payloadString.split('.');
-   if (parts.length !== 3) throw new Error('Invalid payload segments');
-   const [_, b64, sigHex] = parts;
-   const payload = atob(b64);
+   let parsed;
+   try {
+     parsed = JSON.parse(payloadString);
+   } catch(e) {
+     throw new Error('Invalid format: not JSON');
+   }
+   
+   if (parsed.version !== 1 || parsed.type !== 'INSUREX_OFFLINE_TX') {
+     throw new Error('Invalid transaction type or version');
+   }
+   
+   const { version, type, signature, ...dataObj } = parsed;
+   
+   if (!signature || !dataObj.publicKey) {
+     throw new Error('Missing signature or public key');
+   }
+   
+   const publicKey = await crypto.subtle.importKey(
+     'jwk',
+     dataObj.publicKey,
+     { name: "ECDSA", namedCurve: "P-256" },
+     true,
+     ['verify']
+   );
+   
    const enc = new TextEncoder();
-   const key = await getCryptoKey();
-   const expectedSigBuf = await crypto.subtle.sign('HMAC', key, enc.encode(payload));
-   const expectedSigHex = Array.from(new Uint8Array(expectedSigBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
-   if (sigHex !== expectedSigHex) throw new Error('Invalid Signature');
-   return JSON.parse(payload);
+   const payloadToVerify = JSON.stringify(dataObj);
+   
+   const sigBytes = new Uint8Array( (signature.match(/.{1,2}/g) || []).map((byte: string) => parseInt(byte, 16)));
+   
+   const isValid = await crypto.subtle.verify(
+     { name: "ECDSA", hash: { name: "SHA-256" } },
+     publicKey,
+     sigBytes,
+     enc.encode(payloadToVerify)
+   );
+   
+   if (!isValid) throw new Error('Invalid Signature');
+   
+   // Verify hash
+   const expectedHash = await calculateBalanceHash(dataObj.walletId, dataObj.farmerId, dataObj.newBalancePaise, dataObj.sequenceNumber, dataObj.transactionId);
+   if (expectedHash !== dataObj.balanceHash) {
+     throw new Error('Invalid Balance Hash');
+   }
+   
+   return parsed;
 }

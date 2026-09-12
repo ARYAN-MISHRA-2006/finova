@@ -29,15 +29,34 @@ db.exec(`
 
 const SECRET_KEY_STRING = "dummy-secret-key-for-finova-demo";
 
-function verifySignature(payload: any, signatureHex: string) {
-  const enc = new TextEncoder();
-  const data = enc.encode(JSON.stringify(payload));
-  const key = crypto.createSecretKey(SECRET_KEY_STRING.padEnd(32, '\0').substring(0, 32), 'utf-8');
-  const hmac = crypto.createHmac('sha256', key);
-  hmac.update(data);
-  const expected = hmac.digest('hex');
-  return expected === signatureHex;
+
+async function verifySignature(payload: any, signatureHex: string, publicKeyJwk: any) {
+  try {
+    const publicKey = await globalThis.crypto.subtle.importKey(
+      'jwk',
+      publicKeyJwk,
+      { name: "ECDSA", namedCurve: "P-256" },
+      true,
+      ['verify']
+    );
+    
+    const enc = new TextEncoder();
+    const payloadStr = JSON.stringify(payload);
+    const sigBytes = new Uint8Array( (signatureHex.match(/.{1,2}/g) || []).map((byte: string) => parseInt(byte, 16)));
+    
+    const isValid = await globalThis.crypto.subtle.verify(
+      { name: "ECDSA", hash: { name: "SHA-256" } },
+      publicKey,
+      sigBytes,
+      enc.encode(payloadStr)
+    );
+    return isValid;
+  } catch (e) {
+    console.error("Signature verification failed:", e);
+    return false;
+  }
 }
+
 
 export async function POST(req: Request) {
   try {
@@ -54,11 +73,21 @@ export async function POST(req: Request) {
       }
 
       // Verify signature
+      
       const payloadObj = {
-        transactionId, walletId, farmerId, deviceId, amountPaise, newBalancePaise, sequenceNumber, timestamp, balanceHash
+        transactionId, 
+        walletId, 
+        farmerId, 
+        deviceId, 
+        amountPaise, 
+        newBalancePaise, 
+        sequenceNumber, 
+        timestamp, 
+        balanceHash,
+        publicKey: tx.publicKey
       };
       
-      if (!verifySignature(payloadObj, signature)) {
+      if (!(await verifySignature(payloadObj, signature, tx.publicKey))) {
         results.push({ status: "REJECTED", reason: "Invalid Signature", transactionId });
         continue;
       }

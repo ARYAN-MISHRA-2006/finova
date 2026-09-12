@@ -12,7 +12,7 @@ const withPWA = withPWAInit({
   },
 });
 
-const nextConfig: NextConfig = {
+const nextConfig: NextConfig = { allowedDevOrigins: ['10.1.136.102', '0.0.0.0', 'localhost', '192.168.1.5', 'http://10.1.136.102:3000'],
   /* config options here */
 };
 

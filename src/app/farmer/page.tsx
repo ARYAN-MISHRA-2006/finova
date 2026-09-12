@@ -1,344 +1,313 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getBalance, addTransaction, getPendingTransactions, setLocalState, getLocalState } from '@/lib/idb';
-import { decodeCriticalRecord, encodeCriticalRecord } from '@/domain/protocol';
-import QrScanner from '@/components/QrScanner';
-import { QRCodeSVG } from 'qrcode.react';
+import { setLocalState, getLocalState } from '@/lib/idb';
+
+const ICONS = ['🌾', '🏠', '💧', '🐄', '☀️'];
+const PASSWORDS = {
+  Ramu: ['🌾', '💧', '🏠'],
+  Sita: ['🐄', '☀️', '💧']
+};
 
 export default function FarmerApp() {
-  const [screen, setScreen] = useState('LOGIN');
-  const [userId, setUserId] = useState('');
-  const [products, setProducts] = useState<any[]>([]);
-  const [activePolicy, setActivePolicy] = useState<any>(null);
-  const [balance, setBalance] = useState(0);
-  const [queueCount, setQueueCount] = useState(0);
-  const [online, setOnline] = useState(true);
+  const [screen, setScreen] = useState<'LOGIN_PROFILES' | 'IMAGE_AUTH' | 'MAIN_APP'>('LOGIN_PROFILES');
+  const [tab, setTab] = useState('HOME');
   
-  // Scanning state
-  const [isScanning, setIsScanning] = useState(false);
-  const [manualFallback, setManualFallback] = useState('');
-  const [dummyQR, setDummyQR] = useState<string | null>(null);
-  const [successScreen, setSuccessScreen] = useState<{ amount: number, policy: string } | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [selectedProfile, setSelectedProfile] = useState<'Ramu' | 'Sita' | null>(null);
+  const [sequence, setSequence] = useState<string[]>([]);
+  const [authError, setAuthError] = useState(false);
+  
+  // App state
+  const [online, setOnline] = useState(true);
+  const [activePolicy, setActivePolicy] = useState<any>(null);
 
   useEffect(() => {
     setOnline(navigator.onLine);
-    window.addEventListener('online', () => setOnline(true));
-    window.addEventListener('offline', () => setOnline(false));
+    const handleOnline = () => setOnline(true);
+    const handleOffline = () => setOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
 
-    // Handle deep link / URL parameter if scanned from standard phone camera
-    const params = new URLSearchParams(window.location.search);
-    const claimPayload = params.get('claim');
-    
+    // Force strict isolation. If no user, stay on login.
     getLocalState('session_userId').then(uid => {
-      const activeUid = uid || 'FarmerA'; // fallback if they just scanned from fresh browser
-      if (!uid) {
-        setLocalState('session_userId', 'FarmerA');
-      }
-      setUserId(activeUid);
-      setScreen('HOME');
-      refreshData(activeUid);
-      
-      if (claimPayload) {
-        // Clear the URL bar
-        window.history.replaceState({}, document.title, window.location.pathname);
-        setScreen('WALLET');
-        applyCriticalRecord(claimPayload, activeUid);
+      if (uid) {
+        setUserId(uid);
+        setScreen('MAIN_APP');
       }
     });
 
-    getLocalState('cached_products').then(p => {
-      if (p) setProducts(p);
+    // Mock policy for the home screen demo as requested
+    setActivePolicy({
+      name: 'Drought Shield',
+      crop: 'मूंगफली',
+      payout: { amount: 10000 }
     });
 
-    fetch('/api/products')
-      .then(res => res.json())
-      .then(data => {
-        setProducts(data);
-        setLocalState('cached_products', data);
-      }).catch(() => console.log('Offline: Using cached products'));
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
   }, []);
 
-  const refreshData = async (uid: string) => {
-    const bal = await getBalance(uid);
-    setBalance(bal);
-    const pending = await getPendingTransactions(uid);
-    setQueueCount(pending.length);
-    const policy = await getLocalState(`activePolicy_${uid}`);
-    if (policy) setActivePolicy(policy);
+  const handleProfileSelect = (name: 'Ramu' | 'Sita') => {
+    setSelectedProfile(name);
+    setSequence([]);
+    setAuthError(false);
+    setScreen('IMAGE_AUTH');
   };
 
-  const login = async (uid: string) => {
-    setUserId(uid);
-    await setLocalState('session_userId', uid);
-    setScreen('HOME');
-    refreshData(uid);
+  const handleImageTap = (icon: string) => {
+    if (sequence.length < 3) {
+      setSequence([...sequence, icon]);
+      setAuthError(false);
+    }
   };
 
-  const logout = async () => {
-    setUserId('');
-    setActivePolicy(null);
+  const handleVerify = async () => {
+    if (!selectedProfile) return;
+    const correctSequence = PASSWORDS[selectedProfile];
+    if (sequence.join('') === correctSequence.join('')) {
+      // ✅ पहचान सफल 
+      setUserId(selectedProfile);
+      await setLocalState('session_userId', selectedProfile);
+      setScreen('MAIN_APP');
+    } else {
+      setAuthError(true);
+    }
+  };
+
+  const handleClear = () => {
+    setSequence([]);
+    setAuthError(false);
+  };
+
+  const handleLogout = async () => {
+    // Strict isolation: clear everything
+    setUserId(null);
+    setSelectedProfile(null);
+    setSequence([]);
+    setTab('HOME');
+    // Clear the active session
     await setLocalState('session_userId', null);
-    setScreen('LOGIN');
+    setScreen('LOGIN_PROFILES');
   };
-
-  const activatePolicy = async (p: any) => {
-    setActivePolicy(p);
-    await setLocalState(`activePolicy_${userId}`, p);
-    setScreen('VOICE_DISCLOSURE');
-  };
-
-  const playVoice = () => {
-    const text = `Your crop is insured. If rainfall is ${activePolicy.trigger.operator} ${activePolicy.trigger.threshold} mm, you get ₹${activePolicy.payout.amount}.`;
-    const ut = new SpeechSynthesisUtterance(text);
-    ut.onend = () => setScreen('UNDERSTANDING_CHECK');
-    window.speechSynthesis.speak(ut);
-  };
-
-  const answerQuestion = async (correct: boolean) => {
-    if (correct) {
-      alert('Correct! Insurance Activated.');
-      setScreen('WALLET');
-    } else {
-      alert('Incorrect. Please listen again.');
-      setScreen('VOICE_DISCLOSURE');
-    }
-  };
-
-  const spendOffline = async () => {
-    if (balance < 250) return alert('Insufficient funds');
-    await addTransaction({
-      id: crypto.randomUUID(),
-      userId,
-      amount: -250,
-      type: 'SPEND',
-      timestamp: Date.now(),
-      sequence: Date.now(),
-      prevHash: 'dummy-prev',
-      newHash: 'dummy-new',
-      status: 'PENDING'
-    });
-    alert('₹250 spent offline. Transaction queued for sync.');
-    refreshData(userId);
-  };
-
-  const syncWallet = async () => {
-    if (!online) return alert('Offline');
-    const pending = await getPendingTransactions(userId);
-    if (!pending.length) return alert('Nothing to sync');
-    const res = await fetch('/api/sync', {
-      method: 'POST',
-      body: JSON.stringify(pending)
-    });
-    await res.json();
-    alert('Sync complete!');
-    refreshData(userId);
-  };
-
-  const applyCriticalRecord = async (payload: string, uidToUse?: string) => {
-    try {
-      const activeUid = uidToUse || userId;
-      // Extract base64 if it's a full URL instead of raw base64
-      let base64Str = payload;
-      if (payload.includes('claim=')) {
-        base64Str = new URL(payload).searchParams.get('claim') || payload;
-      }
-      
-      const binaryString = atob(base64Str);
-      const buf = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        buf[i] = binaryString.charCodeAt(i);
-      }
-      const record = await decodeCriticalRecord(buf);
-      const success = await addTransaction({
-        id: `${record.policyId}-${record.sequence}`, // deterministic ID prevents replay
-        userId: activeUid,
-        amount: record.payoutAmount,
-        type: 'PAYOUT',
-        timestamp: Date.now(),
-        sequence: record.sequence,
-        prevHash: 'hash',
-        newHash: 'hash',
-        status: 'PENDING'
-      });
-      if (success) {
-        setSuccessScreen({ amount: record.payoutAmount, policy: record.policyId });
-      } else {
-        alert(`Invalid settlement record: ALREADY PROCESSED / REJECTED`);
-      }
-      refreshData(activeUid);
-      setIsScanning(false);
-      setDummyQR(null);
-    } catch (e: any) {
-      alert(`Invalid settlement record: ${e.message}`);
-      setIsScanning(false);
-    }
-  }
-
-  const simulateOracle = async (readings: any[]) => {
-    if (!online) { alert("Weather Oracle requires network"); return; }
-    if (!activePolicy) { alert("Activate a policy first!"); return; }
-    const res = await fetch('/api/weather/evaluate', {
-      method: 'POST',
-      body: JSON.stringify({ policy: activePolicy, readings, userId })
-    });
-    const data = await res.json();
-    if (data.status === 'TRIGGERED' && data.criticalRecordBase64) {
-      alert('Payout triggered. In production, this record is sent to Insurer for QR Generation.');
-    } else {
-      alert(`Status: ${data.status}`);
-    }
-  };
-
-  const generateDummyQR = async () => {
-    const record = await encodeCriticalRecord({
-      policyId: activePolicy?.productId || 'drought_shield',
-      sequence: Date.now(),
-      triggered: true,
-      payoutAmount: 10000,
-      oracleValue: 72
-    });
-    let binary = '';
-    for (let i = 0; i < record.byteLength; i++) binary += String.fromCharCode(record[i]);
-    const b64 = btoa(binary);
-    
-    // Create a URL so standard phone cameras can open it
-    const url = `${window.location.origin}/farmer?claim=${b64}`;
-    setDummyQR(url);
-    setManualFallback(b64);
-  };
-
-  const handleManualScan = () => {
-    if (!manualFallback) return;
-    applyCriticalRecord(manualFallback);
-  };
-
-  if (successScreen) {
-    return (
-      <div className="max-w-md mx-auto p-8 font-sans text-center min-h-screen flex flex-col justify-center items-center bg-green-50">
-        <div className="w-24 h-24 bg-green-500 rounded-full flex items-center justify-center text-white text-5xl mb-6 shadow-lg">✓</div>
-        <h1 className="text-3xl font-bold text-green-800 mb-2">Payment Received!</h1>
-        <p className="text-5xl font-bold text-green-600 mb-6">₹{successScreen.amount}</p>
-        <p className="text-gray-600 mb-8">Settlement Verified for Policy:<br/><b>{successScreen.policy}</b></p>
-        <button onClick={() => setSuccessScreen(null)} className="w-full p-4 bg-green-600 text-white rounded-lg shadow-lg font-bold text-lg cursor-pointer">Go to Wallet</button>
-      </div>
-    );
-  }
 
   return (
-    <div className="max-w-md mx-auto p-4 font-sans text-gray-900">
-      <h1 className="text-2xl font-bold mb-4 text-blue-600">Finova Farmer</h1>
-      <div className="text-sm mb-4">
-        Network: <span className={online ? 'text-green-500' : 'text-red-500 font-bold'}>{online ? 'ONLINE' : 'OFFLINE (Full Access)'}</span> | 
-        User: <span className="font-bold">{userId || 'None'}</span>
-      </div>
-
-      {screen === 'LOGIN' && (
-        <div className="space-y-4">
-          <button onClick={() => login('FarmerA')} className="w-full p-4 bg-blue-500 text-white rounded shadow cursor-pointer">Login as Farmer A</button>
-          <button onClick={() => login('FarmerB')} className="w-full p-4 bg-green-500 text-white rounded shadow cursor-pointer">Login as Farmer B (Shared Phone)</button>
-        </div>
-      )}
-
-      {screen === 'HOME' && (
-        <div className="space-y-4">
-          <h2 className="text-xl font-bold">Products</h2>
-          {products.map(p => (
-            <button key={p.productId} onClick={() => activatePolicy(p)} className="w-full p-4 bg-white border shadow rounded text-left cursor-pointer">
-              <div className="font-bold">{p.name}</div>
-              <div className="text-sm text-gray-500">Payout: ₹{p.payout.amount}</div>
+    <div className="max-w-md mx-auto min-h-screen bg-gray-50 flex flex-col font-sans relative">
+      
+      {/* 1. FARMER LOGIN / PROFILE SELECTION */}
+      {screen === 'LOGIN_PROFILES' && (
+        <div className="flex-1 p-6 flex flex-col justify-center">
+          <h1 className="text-3xl font-bold text-gray-900 mb-8 text-center">Select your profile</h1>
+          <div className="space-y-6">
+            <button 
+              onClick={() => handleProfileSelect('Ramu')}
+              className="w-full p-6 bg-white border-2 border-gray-100 rounded-3xl shadow-sm flex items-center cursor-pointer hover:shadow-md transition-shadow"
+            >
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center text-3xl mr-4">🌾</div>
+              <span className="text-2xl font-bold text-gray-800">Ramu</span>
             </button>
-          ))}
-          <button onClick={() => setScreen('WALLET')} className="w-full p-4 bg-purple-500 text-white rounded mt-4 shadow cursor-pointer">Go to Wallet</button>
-          <button onClick={logout} className="w-full p-4 bg-red-500 text-white rounded shadow cursor-pointer">Lock / Handover Phone</button>
-        </div>
-      )}
-
-      {screen === 'VOICE_DISCLOSURE' && (
-        <div className="space-y-4 text-center mt-10">
-          <h2 className="text-xl">Listen to Policy terms</h2>
-          <button onClick={playVoice} className="p-6 bg-blue-500 text-white rounded-full mx-auto block shadow-lg cursor-pointer">🔊 Play Audio</button>
-        </div>
-      )}
-
-      {screen === 'UNDERSTANDING_CHECK' && (
-        <div className="space-y-4">
-          <h2 className="text-xl font-bold">When do you get paid?</h2>
-          <button onClick={() => answerQuestion(false)} className="w-full p-4 border rounded bg-white shadow cursor-pointer">If it rains too much</button>
-          <button onClick={() => answerQuestion(true)} className="w-full p-4 border rounded bg-green-50 border-green-200 shadow cursor-pointer">If rainfall is less than {activePolicy?.trigger.threshold}mm</button>
-        </div>
-      )}
-
-      {screen === 'WALLET' && !isScanning && (
-        <div className="space-y-4">
-          <div className="p-6 bg-blue-50 border rounded text-center">
-            <h2 className="text-lg">OFFLINE WALLET</h2>
-            <div className="text-4xl font-bold text-blue-600">₹{balance}</div>
-            <div className="text-sm text-gray-600 mt-1">Connection: {online ? 'ONLINE' : 'OFFLINE'}</div>
-            <button onClick={spendOffline} className="mt-4 px-4 py-2 bg-blue-500 text-white rounded shadow cursor-pointer">Spend ₹250 (Offline)</button>
+            <button 
+              onClick={() => handleProfileSelect('Sita')}
+              className="w-full p-6 bg-white border-2 border-gray-100 rounded-3xl shadow-sm flex items-center cursor-pointer hover:shadow-md transition-shadow"
+            >
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center text-3xl mr-4">🐄</div>
+              <span className="text-2xl font-bold text-gray-800">Sita</span>
+            </button>
           </div>
+        </div>
+      )}
+
+      {/* 2. IMAGE AUTHENTICATION */}
+      {screen === 'IMAGE_AUTH' && (
+        <div className="flex-1 p-6 flex flex-col items-center justify-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Verify your identity</h2>
+          <p className="text-gray-500 mb-8 text-center">Select your pictures in the correct order</p>
           
-          <div className="p-4 border rounded bg-white">
-            <h3 className="font-bold">Sync Queue: {queueCount}</h3>
-            <button onClick={syncWallet} disabled={!online} className="mt-2 px-4 py-2 bg-green-500 text-white rounded disabled:opacity-50 shadow cursor-pointer">Sync Now</button>
+          <div className="grid grid-cols-3 gap-4 mb-10 w-full max-w-[300px]">
+            {ICONS.map(icon => (
+              <button 
+                key={icon} 
+                onClick={() => handleImageTap(icon)}
+                className="aspect-square bg-white border-2 border-gray-100 rounded-2xl shadow-sm text-4xl flex items-center justify-center hover:bg-gray-50 cursor-pointer active:scale-95 transition-transform"
+              >
+                {icon}
+              </button>
+            ))}
           </div>
 
-          <div className="p-4 border rounded bg-purple-50">
-            <h3 className="font-bold mb-2 text-purple-900">Receive Offline Settlement</h3>
-            <p className="text-sm text-purple-700 mb-4">Transfer payout from Insurer / Shared Phone using QR Code. Works completely offline.</p>
-            <button onClick={() => setIsScanning(true)} className="w-full p-3 bg-purple-600 text-white font-bold rounded shadow cursor-pointer">
-              📷 Scan Settlement QR
-            </button>
-          </div>
-
-          <div className="p-4 border rounded bg-gray-50">
-            <h3 className="font-bold mb-2 text-xs text-gray-500">ADMIN: ONLINE WEATHER ORACLE</h3>
-            <div className="flex gap-2 text-sm flex-wrap">
-              <button onClick={async () => { await addTransaction({ id: crypto.randomUUID(), userId, amount: 20000, type: "PAYOUT", timestamp: Date.now(), sequence: Date.now(), prevHash: "test", newHash: "test", status: "PENDING" }); refreshData(userId); }} className="p-2 border rounded bg-yellow-100 shadow cursor-pointer text-yellow-800 font-bold">Add ₹20,000 (Test)</button>
-              <button onClick={() => simulateOracle([{source:'A', value: 72, timestamp: Date.now()}, {source:'B', value: 74, timestamp: Date.now()}, {source:'C', value: 71, timestamp: Date.now()}])} className="p-2 border rounded bg-white shadow cursor-pointer disabled:opacity-50" disabled={!online}>Healthy (72mm)</button>
-              <button onClick={() => simulateOracle([{source:'A', value: 72, timestamp: Date.now()}, {source:'B', value: 74, timestamp: Date.now()}, {source:'C', value: 4, timestamp: Date.now()}])} className="p-2 border rounded bg-white shadow cursor-pointer disabled:opacity-50" disabled={!online}>Outlier (4mm)</button>
-              <button onClick={() => simulateOracle([{source:'A', value: 72, timestamp: Date.now()}, {source:'B', value: 120, timestamp: Date.now()}, {source:'C', value: 4, timestamp: Date.now()}])} className="p-2 border rounded bg-white shadow cursor-pointer disabled:opacity-50" disabled={!online}>Disagreement</button>
+          <div className="w-full bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-6">
+            <p className="text-sm text-gray-500 font-bold mb-3 uppercase tracking-wider">Your sequence:</p>
+            <div className="flex justify-center gap-4 h-12 items-center text-3xl">
+              {sequence.map((icon, idx) => (
+                <span key={idx}>{icon}</span>
+              ))}
+              {sequence.length === 0 && <span className="text-gray-300 text-lg">Empty</span>}
             </div>
           </div>
 
-          <button onClick={() => setScreen('HOME')} className="w-full p-4 text-gray-500 border rounded bg-white shadow cursor-pointer">Back</button>
+          {authError && (
+            <div className="mb-6 p-4 bg-red-50 text-red-700 font-bold rounded-xl flex items-center w-full justify-center text-lg shadow-sm border border-red-100">
+              ❌ गलत क्रम (Wrong Sequence)
+            </div>
+          )}
+
+          <div className="flex gap-4 w-full">
+            <button 
+              onClick={handleClear}
+              className="flex-1 p-4 bg-gray-200 text-gray-800 font-bold rounded-xl cursor-pointer"
+            >
+              Clear
+            </button>
+            {authError ? (
+              <button 
+                onClick={handleClear}
+                className="flex-[2] p-4 bg-red-600 text-white font-bold rounded-xl shadow-md cursor-pointer"
+              >
+                Try Again
+              </button>
+            ) : (
+              <button 
+                onClick={handleVerify}
+                disabled={sequence.length !== 3}
+                className="flex-[2] p-4 bg-green-600 text-white font-bold rounded-xl shadow-md disabled:opacity-50 disabled:shadow-none cursor-pointer transition-opacity"
+              >
+                Verify
+              </button>
+            )}
+          </div>
+          
+          <button onClick={() => setScreen('LOGIN_PROFILES')} className="mt-8 text-gray-500 font-medium">
+            ← Back to profiles
+          </button>
         </div>
       )}
 
-      {screen === 'WALLET' && isScanning && (
-        <div className="space-y-4">
-          <h2 className="text-xl font-bold">Scan QR Settlement</h2>
-          <div className="bg-white p-4 border rounded shadow">
-             <QrScanner 
-                onScan={(text) => applyCriticalRecord(text)} 
-                onError={(err) => console.log('Scanning...', err)} 
-             />
-          </div>
-          
-          <div className="bg-blue-50 p-4 border border-blue-200 rounded mt-4">
-             <h3 className="font-bold text-sm mb-2 text-blue-800">Generate Dummy For Prototype Demo</h3>
-             <button onClick={generateDummyQR} className="bg-blue-600 text-white px-4 py-2 rounded text-sm w-full mb-4 shadow cursor-pointer">Generate Dummy QR (₹10,000)</button>
-             {dummyQR && (
-               <div className="flex flex-col items-center bg-white p-4 rounded shadow">
-                  <QRCodeSVG value={dummyQR} size={200} />
+      {/* 3. FARMER HOME SCREEN */}
+      {screen === 'MAIN_APP' && (
+        <>
+          <div className="flex-1 overflow-y-auto pb-24 bg-gray-50">
+            {/* Network Banner */}
+            {!online && (
+              <div className="bg-orange-500 text-white text-center py-2 font-bold text-sm shadow-sm flex items-center justify-center gap-2">
+                📡 ऑफ़लाइन (Offline Mode)
+              </div>
+            )}
+            
+            <div className="p-6">
+              <div className="flex justify-between items-start mb-8">
+                <div>
+                  <h1 className="text-3xl font-extrabold text-gray-900">
+                    नमस्ते, {userId === 'Ramu' ? 'रामू' : 'सीता'} 👋
+                  </h1>
+                </div>
+                <div className="bg-white p-2 rounded-full shadow-sm">
+                  {online ? '📡' : '⚠️'}
+                </div>
+              </div>
+
+              {tab === 'HOME' && (
+                <div className="space-y-6">
+                  {/* Insurance Status Card */}
+                  <div className="bg-white rounded-3xl p-6 shadow-md border border-gray-100 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-green-50 rounded-bl-full -z-10 opacity-50"></div>
+                    
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center text-2xl">
+                        🛡️
+                      </div>
+                      <h2 className="text-xl font-bold text-gray-800">आपका बीमा</h2>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center border-b border-gray-50 pb-4">
+                        <span className="text-gray-500 font-medium">स्थिति (Status)</span>
+                        <span className="bg-green-100 text-green-800 font-bold px-3 py-1 rounded-full text-sm">
+                          सक्रिय (Active)
+                        </span>
+                      </div>
+                      
+                      <div className="flex justify-between items-center border-b border-gray-50 pb-4">
+                        <span className="text-gray-500 font-medium">फ़सल (Crop)</span>
+                        <span className="font-bold text-gray-800 flex items-center gap-2">
+                          🌾 {activePolicy?.crop || 'मूंगफली'}
+                        </span>
+                      </div>
+
+                      <div className="flex justify-between items-center border-b border-gray-50 pb-4">
+                        <span className="text-gray-500 font-medium">प्लान (Plan)</span>
+                        <span className="font-bold text-gray-800">
+                          {activePolicy?.name || 'Drought Shield'}
+                        </span>
+                      </div>
+
+                      <div className="flex justify-between items-center pt-2">
+                        <span className="text-gray-500 font-medium">💰 भुगतान (Payout)</span>
+                        <span className="text-2xl font-extrabold text-green-600">
+                          ₹{activePolicy?.payout?.amount?.toLocaleString() || '10,000'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                   
-               </div>
-             )}
+                  {/* Placeholder for future features */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100 flex flex-col items-center justify-center text-center gap-2 h-32">
+                      <span className="text-3xl">🌤️</span>
+                      <span className="font-bold text-blue-900">मौसम (Weather)</span>
+                    </div>
+                    <div className="bg-purple-50 p-4 rounded-2xl border border-purple-100 flex flex-col items-center justify-center text-center gap-2 h-32">
+                      <span className="text-3xl">📝</span>
+                      <span className="font-bold text-purple-900">दावा (Claim)</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {tab === 'PROFILE' && (
+                <div className="space-y-4">
+                  <h2 className="text-2xl font-bold">Profile</h2>
+                  <button onClick={handleLogout} className="w-full p-4 bg-red-100 text-red-700 font-bold rounded-2xl">
+                    लॉग आउट (Log Out / Handover)
+                  </button>
+                </div>
+              )}
+              
+              {tab !== 'HOME' && tab !== 'PROFILE' && (
+                <div className="flex flex-col items-center justify-center h-64 text-gray-400">
+                  <span className="text-4xl mb-4">🚧</span>
+                  <p>यह सुविधा जल्द आ रही है</p>
+                  <p className="text-sm">(Coming soon in next stage)</p>
+                </div>
+              )}
+            </div>
           </div>
 
-          <div className="bg-gray-50 p-4 border rounded mt-4">
-            <h3 className="font-bold text-sm mb-2">Fallback Manual Entry</h3>
-            <input 
-               type="text" 
-               className="w-full border p-2 rounded mb-2" 
-               placeholder="Base64 Payload..." 
-               value={manualFallback}
-               onChange={e => setManualFallback(e.target.value)}
-            />
-            <button onClick={handleManualScan} className="bg-gray-800 text-white px-4 py-2 rounded text-sm w-full cursor-pointer">Process Payload</button>
+          {/* BOTTOM NAVIGATION */}
+          <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-6 py-4 flex justify-between items-center shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)] max-w-md mx-auto">
+            <button onClick={() => setTab('HOME')} className={`flex flex-col items-center gap-1 ${tab === 'HOME' ? 'text-green-600' : 'text-gray-400'}`}>
+              <span className="text-2xl">🏠</span>
+              <span className="text-xs font-bold">होम</span>
+            </button>
+            <button onClick={() => setTab('INSURANCE')} className={`flex flex-col items-center gap-1 ${tab === 'INSURANCE' ? 'text-green-600' : 'text-gray-400'}`}>
+              <span className="text-2xl">🛡️</span>
+              <span className="text-xs font-bold">बीमा</span>
+            </button>
+            <button onClick={() => setTab('WALLET')} className={`flex flex-col items-center gap-1 ${tab === 'WALLET' ? 'text-green-600' : 'text-gray-400'}`}>
+              <span className="text-2xl">💰</span>
+              <span className="text-xs font-bold">वॉलेट</span>
+            </button>
+            <button onClick={() => setTab('VOICE')} className={`flex flex-col items-center gap-1 ${tab === 'VOICE' ? 'text-green-600' : 'text-gray-400'}`}>
+              <span className="text-2xl">🔊</span>
+              <span className="text-xs font-bold">आवाज़</span>
+            </button>
+            <button onClick={() => setTab('PROFILE')} className={`flex flex-col items-center gap-1 ${tab === 'PROFILE' ? 'text-green-600' : 'text-gray-400'}`}>
+              <span className="text-2xl">👤</span>
+              <span className="text-xs font-bold">प्रोफ़ाइल</span>
+            </button>
           </div>
-          <button onClick={() => { setIsScanning(false); setDummyQR(null); }} className="w-full p-4 bg-red-500 text-white rounded shadow mt-4 cursor-pointer">Cancel Scan</button>
-        </div>
+        </>
       )}
     </div>
   );

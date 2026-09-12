@@ -19,14 +19,14 @@ export default function AppOpening() {
       </div>
 
       <div className="w-full max-w-sm bg-white rounded-3xl p-6 shadow-2xl mb-8">
-        <h2 className="text-2xl font-bold text-center mb-6">Who are you?</h2>
+        <h2 className="text-2xl font-bold text-center mb-6">आप कौन हैं? (Who are you?)</h2>
         <div className="space-y-4">
           <button 
             onClick={() => router.push('/farmer')}
             className="w-full p-5 bg-green-50 hover:bg-green-100 border-2 border-green-200 rounded-2xl flex items-center shadow-sm cursor-pointer transition-colors"
           >
             <span className="text-4xl mr-4">🌾</span>
-            <span className="text-xl font-bold text-green-900">Farmer</span>
+            <span className="text-xl font-bold text-green-900">किसान (Farmer)</span>
           </button>
           
           <button 
@@ -35,8 +35,8 @@ export default function AppOpening() {
           >
             <span className="text-4xl mr-4">🏦</span>
             <div className="text-left">
-              <span className="text-xl font-bold text-gray-700 block">Insurer</span>
-              <span className="text-xs text-gray-500 font-medium uppercase tracking-wide">Coming soon</span>
+              <span className="text-xl font-bold text-gray-700 block">बीमाकर्ता (Insurer)</span>
+              <span className="text-xs text-gray-500 font-medium uppercase tracking-wide">जल्द आ रहा है (Coming soon)</span>
             </div>
           </button>
         </div>

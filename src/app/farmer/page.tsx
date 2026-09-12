@@ -17,6 +17,7 @@ export default function FarmerApp() {
   const [selectedProfile, setSelectedProfile] = useState<'Ramu' | 'Sita' | null>(null);
   const [sequence, setSequence] = useState<string[]>([]);
   const [authError, setAuthError] = useState(false);
+  const [authSuccess, setAuthSuccess] = useState(false);
   
   // App state
   const [online, setOnline] = useState(true);
@@ -31,16 +32,19 @@ export default function FarmerApp() {
 
     // Force strict isolation. If no user, stay on login.
     getLocalState('session_userId').then(uid => {
-      if (uid) {
+      if (uid === 'Ramu' || uid === 'Sita') {
         setUserId(uid);
         setScreen('MAIN_APP');
+      } else if (uid) {
+        // Clear invalid old session state from previous iterations
+        setLocalState('session_userId', null);
       }
     });
 
     // Mock policy for the home screen demo as requested
     setActivePolicy({
       name: 'Drought Shield',
-      crop: 'मूंगफली',
+      crop: 'मूंगफली (Groundnut)',
       payout: { amount: 10000 }
     });
 
@@ -54,6 +58,7 @@ export default function FarmerApp() {
     setSelectedProfile(name);
     setSequence([]);
     setAuthError(false);
+    setAuthSuccess(false);
     setScreen('IMAGE_AUTH');
   };
 
@@ -68,10 +73,14 @@ export default function FarmerApp() {
     if (!selectedProfile) return;
     const correctSequence = PASSWORDS[selectedProfile];
     if (sequence.join('') === correctSequence.join('')) {
-      // ✅ पहचान सफल 
-      setUserId(selectedProfile);
-      await setLocalState('session_userId', selectedProfile);
-      setScreen('MAIN_APP');
+      setAuthSuccess(true);
+      setAuthError(false);
+      setTimeout(async () => {
+        setUserId(selectedProfile);
+        await setLocalState('session_userId', selectedProfile);
+        setScreen('MAIN_APP');
+        setAuthSuccess(false);
+      }, 1200);
     } else {
       setAuthError(true);
     }
@@ -88,6 +97,7 @@ export default function FarmerApp() {
     setSelectedProfile(null);
     setSequence([]);
     setTab('HOME');
+    setAuthSuccess(false);
     // Clear the active session
     await setLocalState('session_userId', null);
     setScreen('LOGIN_PROFILES');
@@ -99,7 +109,7 @@ export default function FarmerApp() {
       {/* 1. FARMER LOGIN / PROFILE SELECTION */}
       {screen === 'LOGIN_PROFILES' && (
         <div className="flex-1 p-6 flex flex-col justify-center">
-          <h1 className="text-3xl font-bold text-gray-900 mb-8 text-center">Select your profile</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-8 text-center">अपनी प्रोफ़ाइल चुनें (Select your profile)</h1>
           <div className="space-y-6">
             <button 
               onClick={() => handleProfileSelect('Ramu')}
@@ -122,8 +132,8 @@ export default function FarmerApp() {
       {/* 2. IMAGE AUTHENTICATION */}
       {screen === 'IMAGE_AUTH' && (
         <div className="flex-1 p-6 flex flex-col items-center justify-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Verify your identity</h2>
-          <p className="text-gray-500 mb-8 text-center">Select your pictures in the correct order</p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">अपनी पहचान सत्यापित करें (Verify your identity)</h2>
+          <p className="text-gray-500 mb-8 text-center">अपने चित्रों को सही क्रम में चुनें (Select your pictures in the correct order)</p>
           
           <div className="grid grid-cols-3 gap-4 mb-10 w-full max-w-[300px]">
             {ICONS.map(icon => (
@@ -138,48 +148,49 @@ export default function FarmerApp() {
           </div>
 
           <div className="w-full bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-6">
-            <p className="text-sm text-gray-500 font-bold mb-3 uppercase tracking-wider">Your sequence:</p>
+            <p className="text-sm text-gray-500 font-bold mb-3 uppercase tracking-wider">आपका क्रम (Your sequence):</p>
             <div className="flex justify-center gap-4 h-12 items-center text-3xl">
               {sequence.map((icon, idx) => (
                 <span key={idx}>{icon}</span>
               ))}
-              {sequence.length === 0 && <span className="text-gray-300 text-lg">Empty</span>}
+              {sequence.length === 0 && <span className="text-gray-300 text-lg">खाली (Empty)</span>}
             </div>
           </div>
 
-          {authError && (
-            <div className="mb-6 p-4 bg-red-50 text-red-700 font-bold rounded-xl flex items-center w-full justify-center text-lg shadow-sm border border-red-100">
-              ❌ गलत क्रम (Wrong Sequence)
-            </div>
-          )}
+          <div className="h-16 w-full flex items-center justify-center mb-6">
+            {authError && (
+              <div className="p-4 bg-red-50 text-red-700 font-bold rounded-xl flex items-center w-full justify-center text-lg shadow-sm border border-red-100 h-full">
+                ❌ गलत क्रम (Wrong Sequence)
+              </div>
+            )}
+            {authSuccess && (
+              <div className="p-4 bg-green-50 text-green-700 font-bold rounded-xl flex items-center w-full justify-center text-lg shadow-sm border border-green-100 h-full">
+                ✅ पहचान सफल
+              </div>
+            )}
+          </div>
 
           <div className="flex gap-4 w-full">
             <button 
               onClick={handleClear}
               className="flex-1 p-4 bg-gray-200 text-gray-800 font-bold rounded-xl cursor-pointer"
-            >
-              Clear
-            </button>
+            >साफ़ करें (Clear)</button>
             {authError ? (
               <button 
                 onClick={handleClear}
                 className="flex-[2] p-4 bg-red-600 text-white font-bold rounded-xl shadow-md cursor-pointer"
-              >
-                Try Again
-              </button>
+              >फिर से प्रयास करें (Try Again)</button>
             ) : (
               <button 
                 onClick={handleVerify}
-                disabled={sequence.length !== 3}
+                disabled={sequence.length !== 3 || authSuccess}
                 className="flex-[2] p-4 bg-green-600 text-white font-bold rounded-xl shadow-md disabled:opacity-50 disabled:shadow-none cursor-pointer transition-opacity"
-              >
-                Verify
-              </button>
+              >सत्यापित करें (Verify)</button>
             )}
           </div>
           
-          <button onClick={() => setScreen('LOGIN_PROFILES')} className="mt-8 text-gray-500 font-medium">
-            ← Back to profiles
+          <button onClick={() => setScreen('LOGIN_PROFILES')} className="mt-8 text-gray-500 font-medium cursor-pointer">
+            ← प्रोफ़ाइल पर वापस जाएं (Back to profiles)
           </button>
         </div>
       )}
@@ -199,7 +210,7 @@ export default function FarmerApp() {
               <div className="flex justify-between items-start mb-8">
                 <div>
                   <h1 className="text-3xl font-extrabold text-gray-900">
-                    नमस्ते, {userId === 'Ramu' ? 'रामू' : 'सीता'} 👋
+                    नमस्ते, {userId === 'Ramu' ? 'रामू' : 'सीता'} 👋 (Hello)
                   </h1>
                 </div>
                 <div className="bg-white p-2 rounded-full shadow-sm">
@@ -267,7 +278,7 @@ export default function FarmerApp() {
 
               {tab === 'PROFILE' && (
                 <div className="space-y-4">
-                  <h2 className="text-2xl font-bold">Profile</h2>
+                  <h2 className="text-2xl font-bold">प्रोफ़ाइल (Profile)</h2>
                   <button onClick={handleLogout} className="w-full p-4 bg-red-100 text-red-700 font-bold rounded-2xl">
                     लॉग आउट (Log Out / Handover)
                   </button>
@@ -277,8 +288,8 @@ export default function FarmerApp() {
               {tab !== 'HOME' && tab !== 'PROFILE' && (
                 <div className="flex flex-col items-center justify-center h-64 text-gray-400">
                   <span className="text-4xl mb-4">🚧</span>
-                  <p>यह सुविधा जल्द आ रही है</p>
-                  <p className="text-sm">(Coming soon in next stage)</p>
+                  <p>यह सुविधा जल्द आ रही है (This feature is coming soon)</p>
+                  <p className="text-sm"></p>
                 </div>
               )}
             </div>
@@ -288,23 +299,23 @@ export default function FarmerApp() {
           <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-6 py-4 flex justify-between items-center shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)] max-w-md mx-auto">
             <button onClick={() => setTab('HOME')} className={`flex flex-col items-center gap-1 ${tab === 'HOME' ? 'text-green-600' : 'text-gray-400'}`}>
               <span className="text-2xl">🏠</span>
-              <span className="text-xs font-bold">होम</span>
+              <span className="text-xs font-bold">होम (Home)</span>
             </button>
             <button onClick={() => setTab('INSURANCE')} className={`flex flex-col items-center gap-1 ${tab === 'INSURANCE' ? 'text-green-600' : 'text-gray-400'}`}>
               <span className="text-2xl">🛡️</span>
-              <span className="text-xs font-bold">बीमा</span>
+              <span className="text-xs font-bold">बीमा (Insurance)</span>
             </button>
             <button onClick={() => setTab('WALLET')} className={`flex flex-col items-center gap-1 ${tab === 'WALLET' ? 'text-green-600' : 'text-gray-400'}`}>
               <span className="text-2xl">💰</span>
-              <span className="text-xs font-bold">वॉलेट</span>
+              <span className="text-xs font-bold">वॉलेट (Wallet)</span>
             </button>
             <button onClick={() => setTab('VOICE')} className={`flex flex-col items-center gap-1 ${tab === 'VOICE' ? 'text-green-600' : 'text-gray-400'}`}>
               <span className="text-2xl">🔊</span>
-              <span className="text-xs font-bold">आवाज़</span>
+              <span className="text-xs font-bold">आवाज़ (Voice)</span>
             </button>
             <button onClick={() => setTab('PROFILE')} className={`flex flex-col items-center gap-1 ${tab === 'PROFILE' ? 'text-green-600' : 'text-gray-400'}`}>
               <span className="text-2xl">👤</span>
-              <span className="text-xs font-bold">प्रोफ़ाइल</span>
+              <span className="text-xs font-bold">प्रोफ़ाइल (Profile)</span>
             </button>
           </div>
         </>
